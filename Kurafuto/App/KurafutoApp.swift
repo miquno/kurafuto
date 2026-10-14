@@ -50,6 +50,9 @@ final class AppState {
     }
 
     func switchTo(_ instance: Instance) {
+        // Re-selecting the active panel must not rebuild the service: in demo mode that would
+        // replace the mock with a live client pointed at the sample address.
+        guard instance.id != activeInstance?.id else { return }
         activeInstance = instance
         service = LiveCraftyService(client: APIClient(baseURL: instance.baseURL,
                                                       token: instanceStore.token(for: instance),
