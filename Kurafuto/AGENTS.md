@@ -13,7 +13,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 | `Core/Storage/` | `KeychainStore` (tokens), `InstanceStore` (panel list in Application Support, no secrets) |
 | `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView`, `ConfirmAction` |
 | `Features/<Area>/` | One folder per panel area: Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |
-| `Resources/` | `PrivacyInfo.xcprivacy`; `Assets.xcassets` (`AppIcon`, single 1024 px image; `LaunchBackground` = dark `Theme.background`); generated `Info.plist` (gitignored) |
+| `Resources/` | `PrivacyInfo.xcprivacy`; `Assets.xcassets` (`AppIcon`, single 1024 px image rendered by `scripts/make-app-icon.swift`; `LaunchBackground` = dark `Theme.background`); generated `Info.plist` (gitignored) |
 
 ## Rules
 
