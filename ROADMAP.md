@@ -22,7 +22,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 - [x] Self-signed certificate trust via fingerprint pinning (ADR 0004).
 - [x] Governance: `AGENTS.md` (root and folder-local), `CLAUDE.md` pointers, `CONTRIBUTING.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE`, `CODEOWNERS`, issue and PR templates, gitignored `scratch/`.
 - [x] CI: `build-and-test` and `DCO` with read-only permissions and SHA-pinned actions.
-- [ ] First green build in Xcode and CI; fix compiler errors from the uncompiled scaffold.
+- [x] First green build in Xcode and CI; fix compiler errors from the uncompiled scaffold.
 - [x] Static, tracking-free website with privacy policy for getkurafuto.app (ADR 0006).
 - [ ] Repository settings applied: ruleset for `main`, secret scanning with push protection, private vulnerability reporting, Pages with custom domain (see `.github/AGENTS.md`).
 
