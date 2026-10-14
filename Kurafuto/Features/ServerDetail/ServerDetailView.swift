@@ -180,7 +180,11 @@ struct ServerDetailView: View {
                 }
                 if let world = stats?.worldName { detail("World") { Text(world) } }
                 if let size = stats?.worldSize { detail("World size") { Text(size) } }
-                if let started = stats?.started { detail("Started") { Text(started) } }
+                if let started = stats?.started {
+                    detail("Started") {
+                        Text(ServerStats.startTime(started)?.formatted(date: .abbreviated, time: .shortened) ?? started)
+                    }
+                }
             }
             .card()
         }
@@ -258,6 +262,16 @@ struct StatPoint: Identifiable {
 }
 
 extension String {
+    /// Crafty HTML-escapes log lines (Python `html.escape`) unless ANSI stripping is also turned off.
+    /// The app shows logs as plain text, so the five entities are turned back into characters.
+    var unescapingCraftyLogHTML: String {
+        replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#x27;", with: "'")
+            .replacingOccurrences(of: "&amp;", with: "&")
+    }
+
     /// Strips Minecraft formatting codes (§a, §l, …) from MOTDs.
     /// Important: NEVER render MOTDs as HTML (known stored-XSS issue in the web panel, issue #647).
     var strippingMinecraftFormatting: String {

@@ -25,7 +25,7 @@ struct OnboardingView: View {
                             .entrance(0)
                         Text("Your servers. In your pocket.").font(.title2.bold())
                             .entrance(1)
-                        Text("Connect to your self-hosted Crafty Controller panel (version 4.x).")
+                        Text("Connect to your self-hosted Crafty Controller panel (version 4.7 or later).")
                             .font(.subheadline).foregroundStyle(Theme.secondaryText)
                             .entrance(2)
                     }

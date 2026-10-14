@@ -49,12 +49,19 @@ struct ServerStats: Codable, Hashable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         running = try c.decodeIfPresent(Bool.self, forKey: .running) ?? false
-        started = try? c.decodeIfPresent(String.self, forKey: .started)
+        started = c.lenientString(.started)
         cpu = c.lenientDouble(.cpu)
-        mem = (try? c.decodeIfPresent(String.self, forKey: .mem)) ?? "0MB"
+        // Crafty 4.7 sends a preformatted string ("1.4GB"), 4.11 a byte count. Accept both.
+        if let s = try? c.decode(String.self, forKey: .mem) {
+            mem = s
+        } else if let bytes = try? c.decode(Double.self, forKey: .mem), bytes > 0 {
+            mem = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory)
+        } else {
+            mem = "0MB"
+        }
         memPercent = c.lenientDouble(.memPercent)
-        worldName = try? c.decodeIfPresent(String.self, forKey: .worldName)
-        worldSize = try? c.decodeIfPresent(String.self, forKey: .worldSize)
+        worldName = c.lenientString(.worldName)
+        worldSize = c.lenientString(.worldSize)
         serverPort = try? c.decodeIfPresent(Int.self, forKey: .serverPort)
         online = (try? c.decodeIfPresent(Int.self, forKey: .online)) ?? 0
         max = (try? c.decodeIfPresent(Int.self, forKey: .max)) ?? 0
@@ -68,9 +75,9 @@ struct ServerStats: Codable, Hashable {
         } else {
             players = []
         }
-        desc = try? c.decodeIfPresent(String.self, forKey: .desc)
-        icon = try? c.decodeIfPresent(String.self, forKey: .icon)
-        version = try? c.decodeIfPresent(String.self, forKey: .version)
+        desc = c.lenientString(.desc)
+        icon = c.lenientString(.icon)
+        version = c.lenientString(.version)
         updating = (try? c.decodeIfPresent(Bool.self, forKey: .updating)) ?? false
         waitingStart = (try? c.decodeIfPresent(Bool.self, forKey: .waitingStart)) ?? false
         firstRun = (try? c.decodeIfPresent(Bool.self, forKey: .firstRun)) ?? false
@@ -115,6 +122,13 @@ struct DiskUsage: Hashable, Identifiable {
 }
 
 extension KeyedDecodingContainer {
+    /// Crafty fills values it does not know yet (stopped server) with Python's `False`,
+    /// serialized as the string "False". Those and empty strings become nil.
+    func lenientString(_ key: Key) -> String? {
+        guard let s = try? decodeIfPresent(String.self, forKey: key), !s.isEmpty, s != "False" else { return nil }
+        return s
+    }
+
     func lenientDouble(_ key: Key) -> Double {
         if let d = try? decode(Double.self, forKey: key) { return d }
         if let s = try? decode(String.self, forKey: key) {
