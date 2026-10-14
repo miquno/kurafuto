@@ -78,4 +78,4 @@ Start with [AGENTS.md](AGENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## License
 
-[MIT](LICENSE) © miquno and Kurafuto contributors. See [NOTICE](NOTICE).
+Source code: [MIT](LICENSE) © miquno and Kurafuto contributors. The name "Kurafuto" and the app icon are **not** covered by the MIT licence – forks must use their own name and icon. See [NOTICE](NOTICE) and [ADR 0007](docs/decisions/0007-name-and-icon-outside-mit.md).

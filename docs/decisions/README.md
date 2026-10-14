@@ -10,8 +10,9 @@ Write an ADR when a change adds a dependency, changes a trust boundary, adds a n
 | [0002](0002-no-data-collection.md) | No data collection; the user's panel is the only network peer | Accepted |
 | [0003](0003-service-protocol-and-mock-first.md) | `CraftyService` protocol with a full mock | Accepted |
 | [0004](0004-self-signed-certificate-pinning.md) | Trust self-signed panels by explicit certificate pinning | Accepted |
-| [0005](0005-licence-and-naming.md) | MIT licence and the name "Kurafuto" | Accepted |
+| [0005](0005-licence-and-naming.md) | MIT licence and the name "Kurafuto" | Accepted, amended by 0007 |
 | [0006](0006-website-and-domain.md) | Website on getkurafuto.app via GitHub Pages | Accepted |
+| [0007](0007-name-and-icon-outside-mit.md) | Name and app icon are not covered by the MIT licence | Accepted |
 
 ## Template
 
