@@ -31,7 +31,9 @@ targets:
       properties:
         CFBundleDisplayName: Kurafuto
         CFBundleDevelopmentRegion: en
-        UILaunchScreen: {}
+        # Matches Theme.background in the default dark mode, so launch does not flash white.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSLocalNetworkUsageDescription: "Kurafuto connects to your self-hosted server panel on your local network."
         NSFaceIDUsageDescription: "Unlock Kurafuto with Face ID before controlling your servers."
@@ -39,6 +41,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto
+        # No app icon yet; the asset catalog only holds the launch background.
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
   KurafutoTests:
     type: bundle.unit-test
     platform: iOS
