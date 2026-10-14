@@ -18,7 +18,9 @@ Details: [Privacy policy](https://getkurafuto.app/privacy/) · [Threat model](do
 
 ## Status
 
-Early development (0.1). The full UI runs on a mock service; the live API integration is being verified endpoint by endpoint. See [ROADMAP.md](ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
+Early development (0.1). The full UI runs on a mock service; the live API integration is being verified endpoint by endpoint ([API notes](docs/api/crafty-api-v2.md)). See [ROADMAP.md](ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
+
+**Compatibility:** Crafty Controller **4.7.0 or later**. Sign-in, server list, stats, start/stop/restart/kill, console and logs are verified against 4.7.0 and 4.11.0.
 
 ## Getting started
 

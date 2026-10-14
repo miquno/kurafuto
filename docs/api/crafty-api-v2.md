@@ -3,31 +3,46 @@
 Based on `openapi-spec.yml` v2.0.1 (docs.craftycontrol.com). Auth: `Authorization: Bearer <token>`.
 Responses: `{"status":"ok","data":…}` / `{"status":"error","error":"CODE","error_data":"…"}`.
 
-| CraftyService | Method & path | Docs |
-|---|---|---|
-| login | `POST /api/v2/auth/login` {username,password,totp?} | ✅ |
-| invalidateAllSessions | `POST /api/v2/auth/invalidate_tokens` | ✅ |
-| healthCheck | `GET /api/v2/crafty/check` | ✅ |
-| servers | `GET /api/v2/servers` | ✅ |
-| server | `GET /api/v2/servers/{id}` | ✅ (example in spec is wrong) |
-| createServer | `POST /api/v2/servers` | ✅ |
-| updateServer | `PATCH /api/v2/servers/{id}` | ✅ |
-| deleteServer | `DELETE /api/v2/servers/{id}` | ✅ |
-| send(action) | `POST /api/v2/servers/{id}/action/{start_server…}` | ✅ |
-| sendCommand | `POST /api/v2/servers/{id}/stdin` (text/plain, no leading /) | ✅ |
-| logs | `GET /api/v2/servers/{id}/logs?file=&colors=&raw=&html=` | ✅ |
-| stats | `GET /api/v2/servers/{id}/stats` | ✅ |
-| schedules | `GET /api/v2/servers/{id}/tasks` | ⚠️ not in spec |
-| create/update/deleteSchedule | `POST …/tasks`, `PATCH/DELETE …/tasks/{taskID}` | ✅ |
-| webhooks | `GET /api/v2/servers/{id}/webhook` | ✅ |
-| saveWebhook | `POST /api/v2/servers/{id}/webhook` · `PATCH /api/v2/server/{id}/webhook/{wid}` | ✅ (note singular "server") |
-| users / saveUser / deleteUser | `/api/v2/users`, `/api/v2/users/{id}` | ✅ |
-| roles / saveRole / deleteRole | `/api/v2/roles`, `/api/v2/roles/{id}` | ✅ |
-| hostStats | `GET /metrics/host` (OpenMetrics text) | ✅ |
-| announcements / clear | `GET/POST /api/v2/crafty/announcements` | ✅ |
-| backupConfigs, backupFiles, restore, delete | `/api/v2/servers/{id}/backups/…` | ⚠️ |
-| listFiles, readFile, writeFile, createFolder, deleteFile | `/api/v2/servers/{id}/files/…` (since 4.7 incl. copy/move) | ⚠️ |
-| consoleStream | web panel WebSocket `/ws` | ⚠️ undocumented, polling as fallback |
+**Minimum supported panel: Crafty Controller 4.7.0.** "Live" marks calls exercised with `LiveCraftyService`
+against local test panels **4.7.0** and **4.11.0** (official Docker images, Paper 1.21.4 server, 2026-10-14).
+
+| CraftyService | Method & path | Docs | Live |
+|---|---|---|---|
+| login | `POST /api/v2/auth/login` {username,password,totp?} | ✅ | ✅ |
+| invalidateAllSessions | `POST /api/v2/auth/invalidate_tokens` | ✅ | – |
+| healthCheck | `GET /api/v2/crafty/check` | ✅ | ✅ |
+| servers | `GET /api/v2/servers` | ✅ | ✅ |
+| server | `GET /api/v2/servers/{id}` | ✅ (example in spec is wrong) | ✅ |
+| createServer | `POST /api/v2/servers` | ✅ | ✅ Paper download |
+| updateServer | `PATCH /api/v2/servers/{id}` | ✅ | – |
+| deleteServer | `DELETE /api/v2/servers/{id}` | ✅ | – |
+| send(action) | `POST /api/v2/servers/{id}/action/{start_server…}[/{action_id}]` | ✅ | start, stop, restart, kill ✅ · backup see below · clone, update – |
+| sendCommand | `POST /api/v2/servers/{id}/stdin` (text/plain, no leading /) | ✅ | ✅ |
+| logs | `GET /api/v2/servers/{id}/logs?file=&colors=&raw=&html=` | ✅ | ✅ live buffer and file |
+| stats | `GET /api/v2/servers/{id}/stats` | ✅ | ✅ stopped and running |
+| schedules | `GET /api/v2/servers/{id}/tasks` | ⚠️ not in spec | – |
+| create/update/deleteSchedule | `POST …/tasks`, `PATCH/DELETE …/tasks/{taskID}` | ✅ | – |
+| webhooks | `GET /api/v2/servers/{id}/webhook` | ✅ | – |
+| saveWebhook | `POST /api/v2/servers/{id}/webhook` · `PATCH /api/v2/server/{id}/webhook/{wid}` | ✅ (note singular "server") | – |
+| users / saveUser / deleteUser | `/api/v2/users`, `/api/v2/users/{id}` | ✅ | – |
+| roles / saveRole / deleteRole | `/api/v2/roles`, `/api/v2/roles/{id}` | ✅ | – |
+| hostStats | `GET /metrics/host` (OpenMetrics text) | ✅ | – |
+| announcements / clear | `GET/POST /api/v2/crafty/announcements` | ✅ | – |
+| backupConfigs, backupFiles, restore, delete | `/api/v2/servers/{id}/backups/…` | ⚠️ | – |
+| listFiles, readFile, writeFile, createFolder, deleteFile | `/api/v2/servers/{id}/files/…` (since 4.7 incl. copy/move) | ⚠️ | – |
+| consoleStream | web panel WebSocket `/ws` | ⚠️ undocumented, polling as fallback | ✅ polling |
+
+## Quirks found on real panels
+
+Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.swift`.
+
+- **Login:** `"totp": null` is rejected as `INCORRECT_CREDENTIALS` (4.11.0). Leave the key out when there is no code (`LoginRequest`).
+- **Stats:** values Crafty does not know yet (stopped or still booting server) arrive as the string `"False"`: `started`, `version`, `desc`, `players`. `icon` can be `""`. The app treats both as missing.
+- **Stats `mem`:** 4.7.0 sends a formatted string (`"1.4GB"`), 4.11.0 a byte count (`1480200192.0`).
+- **Stats `started`:** `yyyy-MM-dd HH:mm:ss` in **UTC**, while `created` is ISO 8601 in panel-local time.
+- **Logs:** HTML-escaped (Python `html.escape`) unless `raw=true`, which also keeps ANSI codes. The app unescapes the five entities and shows plain text.
+- **EULA:** a new Java server only starts after `POST …/action/eula`. The app does not offer this yet; servers created in the app must be accepted in the web panel first.
+- **Backup:** `action/backup_server` without an id uses the default backup config on 4.11.0. On 4.7.0 it answers `ok` but the backup fails inside the panel (`BackupsDoesNotExist`); it needs `action/backup_server/{backup_id}`. To be fixed together with the backups item in 0.3.
 
 More useful endpoints for later: `/api/v2/users/{id}/permissions` (hide UI based on permissions),
 `/api/v2/servers/{id}/users`, `/metrics/servers/{id}`, `/api/v2/crafty/config` (panel settings, superuser).

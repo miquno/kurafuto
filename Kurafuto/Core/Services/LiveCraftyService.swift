@@ -1,5 +1,13 @@
 import Foundation
 
+/// Body of `POST /api/v2/auth/login`. `totp` must be left out when empty:
+/// Crafty 4.11 rejects `"totp": null` as incorrect credentials.
+struct LoginRequest: Encodable {
+    let username: String
+    let password: String
+    let totp: String?
+}
+
 /// Real implementation against Crafty Controller 4 (API v2).
 ///
 /// ✅ = documented in the official openapi-spec.yml
@@ -14,10 +22,9 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
 
     // MARK: Auth ✅
     func login(username: String, password: String, totp: String?) async throws -> String {
-        struct Body: Encodable { let username: String; let password: String; let totp: String? }
         struct Res: Decodable { let token: String }
         let res: Res = try await client.request(.post, "/api/v2/auth/login",
-                                                body: .json(Body(username: username, password: password, totp: totp)))
+                                                body: .json(LoginRequest(username: username, password: password, totp: totp)))
         client.token = res.token
         return res.token
     }
@@ -42,8 +49,9 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/stdin", body: .text(cmd))
     }
     func logs(serverID: String, fromFile: Bool) async throws -> [String] {
-        try await client.request(.get, "/api/v2/servers/\(serverID)/logs",
-                                 query: [URLQueryItem(name: "file", value: fromFile ? "true" : "false")])
+        let lines: [String] = try await client.request(.get, "/api/v2/servers/\(serverID)/logs",
+                                                       query: [URLQueryItem(name: "file", value: fromFile ? "true" : "false")])
+        return lines.map(\.unescapingCraftyLogHTML)
     }
     func updateServer(_ server: Server) async throws {
         let _: Empty = try await client.request(.patch, "/api/v2/servers/\(server.id)", body: .json(server))

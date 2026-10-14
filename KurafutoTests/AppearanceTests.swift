@@ -63,9 +63,11 @@ final class AppearanceTests: XCTestCase {
         XCTAssertEqual(ThemeMode.gray.colorScheme, .dark)
     }
 
-    func testStartTimeParsesCraftyFormat() throws {
+    func testStartTimeParsesCraftyFormatAsUTC() throws {
         let date = try XCTUnwrap(ServerStats.startTime("2026-10-14 08:12:03"))
-        let parts = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        let parts = utc.dateComponents([.hour, .minute, .second], from: date)
         XCTAssertEqual(parts.hour, 8)
         XCTAssertEqual(parts.minute, 12)
         XCTAssertEqual(parts.second, 3)

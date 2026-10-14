@@ -364,10 +364,11 @@ struct ServerIcon: View {
 }
 
 extension ServerStats {
-    /// Crafty reports `started` as "yyyy-MM-dd HH:mm:ss" in the panel's local time.
+    /// Crafty reports `started` as "yyyy-MM-dd HH:mm:ss" in UTC (unlike `created`, which is panel-local).
     static func startTime(_ raw: String) -> Date? {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return f.date(from: raw)
     }
