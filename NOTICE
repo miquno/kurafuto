@@ -13,6 +13,10 @@ compatibility.
 Kurafuto contains no code, artwork or text from Crafty Controller. It talks to
 Crafty Controller exclusively through its public HTTP API (v2).
 
+The app icon (pixel-art server rack) is drawn from the pixel map in
+scripts/make-app-icon.swift, after a draft miquno made with an AI image
+generator (ChatGPT). It contains no third-party logos or trademarks.
+
 Third-party software
 --------------------
 None. Kurafuto uses only Apple system frameworks.

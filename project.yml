@@ -41,8 +41,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto
-        # No app icon yet; the asset catalog only holds the launch background.
-        ASSETCATALOG_COMPILER_APPICON_NAME: ""
   KurafutoTests:
     type: bundle.unit-test
     platform: iOS
