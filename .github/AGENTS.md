@@ -21,11 +21,11 @@ GitHub Actions workflows, issue and pull request templates, and code owners. (Na
 
 These are not in code; keep this list in sync with the live settings.
 
-- Ruleset `main`: no deletion, no force-push, no bypass actors; pull requests required, conversation resolution required, squash merge only; required status checks `build-and-test` and `DCO` (GitHub Actions app).
+- Ruleset `main` (ID `25093336`): no deletion, no force-push, no bypass actors; pull requests required, conversation resolution required, squash merge only; required status checks `build-and-test` and `DCO` (GitHub Actions app).
 - Squash merge as the only merge method; delete branches after merge.
 - Secret scanning and push protection enabled; private vulnerability reporting enabled; Dependabot **alerts** enabled, automatic pull requests disabled.
 - Actions: default `GITHUB_TOKEN` read-only; workflows may not create or approve pull requests.
-- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the account's Pages settings.
+- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the account's Pages settings. Pending: the custom domain is not set until DNS resolves.
 - Code-owner review not required while there is a single maintainer.
 
 ## Gotchas
