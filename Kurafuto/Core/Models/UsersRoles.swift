@@ -80,10 +80,59 @@ enum ServerPermission: Int, CaseIterable, Identifiable {
     }
 }
 
-/// `GET /api/v2/users/{id}/permissions` – global Crafty permissions.
-struct CraftyPermissions: Codable, Hashable {
-    var serverCreation: Bool
-    var userConfig: Bool
-    var rolesConfig: Bool
-    var serverCreationLimit: Int?
+/// `GET /api/v2/users/@me/permissions` – panel-wide permissions (same shape on Crafty 4.7.0 and 4.11.0).
+/// `permissions` is a bit string in `EnumPermissionsCrafty` order (see `Kind`). Superusers get "000"
+/// here, so the superuser flag from `/users/@me` must be checked first (`PanelAccess`).
+struct CraftyPermissions: Decodable, Hashable {
+    /// Declaration order is the bit order.
+    enum Kind: String, CaseIterable {
+        case serverCreation = "SERVER_CREATION"
+        case userConfig = "USER_CONFIG"
+        case rolesConfig = "ROLES_CONFIG"
+    }
+
+    var mask: String
+    var counters: [String: Int]
+    var limits: [String: Int]
+
+    enum CodingKeys: String, CodingKey { case mask = "permissions", counters, limits }
+
+    init(mask: String, counters: [String: Int] = [:], limits: [String: Int] = [:]) {
+        self.mask = mask; self.counters = counters; self.limits = limits
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mask = (try? c.decode(String.self, forKey: .mask)) ?? ""
+        counters = (try? c.decode([String: Int].self, forKey: .counters)) ?? [:]
+        limits = (try? c.decode([String: Int].self, forKey: .limits)) ?? [:]
+    }
+
+    func has(_ kind: Kind) -> Bool {
+        guard let index = Kind.allCases.firstIndex(of: kind), index < mask.count else { return false }
+        return mask[mask.index(mask.startIndex, offsetBy: index)] == "1"
+    }
+
+    /// Mirrors Crafty's `can_add_in_crafty`: the bit is set and the user is below the limit, or the limit is -1.
+    func canAdd(_ kind: Kind) -> Bool {
+        guard has(kind) else { return false }
+        let limit = limits[kind.rawValue] ?? 0
+        return limit == -1 || (counters[kind.rawValue] ?? 0) < limit
+    }
+}
+
+/// What the signed-in user may do on the panel as a whole. Per-server rights are not exposed by the
+/// API for the signed-in user; the panel enforces them per request.
+struct PanelAccess: Hashable {
+    var isSuperuser: Bool
+    var permissions: CraftyPermissions
+
+    static let superuser = PanelAccess(isSuperuser: true, permissions: CraftyPermissions(mask: "000"))
+
+    var canCreateServers: Bool { isSuperuser || permissions.canAdd(.serverCreation) }
+    var canManageUsers: Bool { isSuperuser || permissions.has(.userConfig) }
+    var canAddUsers: Bool { isSuperuser || permissions.canAdd(.userConfig) }
+    var canManageRoles: Bool { isSuperuser || permissions.has(.rolesConfig) }
+    var canAddRoles: Bool { isSuperuser || permissions.canAdd(.rolesConfig) }
+    var showsAdmin: Bool { canManageUsers || canManageRoles }
 }

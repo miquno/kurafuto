@@ -46,7 +46,8 @@ protocol CraftyService: AnyObject, Sendable {
     func saveWebhook(_ webhook: Webhook, serverID: String) async throws
     func deleteWebhook(id: Int, serverID: String) async throws
 
-    // Users & roles (superuser)
+    // Users & roles (superuser, or USER_CONFIG / ROLES_CONFIG)
+    func panelAccess() async throws -> PanelAccess
     func users() async throws -> [CraftyUser]
     func saveUser(_ user: CraftyUser, password: String?) async throws
     func deleteUser(id: Int) async throws

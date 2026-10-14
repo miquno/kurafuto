@@ -21,6 +21,8 @@ final class AppState {
     var isMock: Bool
     var requireFaceID = false
     var isUnlocked = true
+    /// Panel-wide rights of the signed-in user; nil until loaded or when loading failed.
+    var access: PanelAccess?
 
     init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool) {
         self.instanceStore = instanceStore
@@ -53,6 +55,7 @@ final class AppState {
         // replace the mock with a live client pointed at the sample address.
         guard instance.id != activeInstance?.id else { return }
         activeInstance = instance
+        access = nil
         service = LiveCraftyService(client: APIClient(baseURL: instance.baseURL,
                                                       token: instanceStore.token(for: instance),
                                                       pinnedSHA256: instance.pinnedCertificateSHA256))
@@ -61,6 +64,7 @@ final class AppState {
 
     func startDemo() {
         activeInstance = MockData.instance
+        access = nil
         service = MockCraftyService()
         isMock = true
     }
@@ -68,7 +72,24 @@ final class AppState {
     func signOut() {
         if let i = activeInstance, !isMock { instanceStore.remove(i) }
         activeInstance = nil
+        access = nil
     }
+}
+
+extension AppState {
+    @MainActor
+    func refreshAccess() async {
+        access = try? await service.panelAccess()
+    }
+
+    // While the rights are unknown, the UI stays complete: the panel enforces them on every request
+    // and its errors are shown, which beats hiding the Admin tab from a superuser on a slow network.
+    var canCreateServers: Bool { access?.canCreateServers ?? true }
+    var canAddUsers: Bool { access?.canAddUsers ?? true }
+    var canAddRoles: Bool { access?.canAddRoles ?? true }
+    var canManageUsers: Bool { access?.canManageUsers ?? true }
+    var canManageRoles: Bool { access?.canManageRoles ?? true }
+    var showsAdmin: Bool { access?.showsAdmin ?? true }
 }
 
 struct RootView: View {
@@ -99,17 +120,22 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
+    @Environment(AppState.self) private var app
+
     var body: some View {
         TabView {
             DashboardView()
                 .tabItem { Label("Servers", systemImage: "server.rack") }
             PanelOverviewView()
                 .tabItem { Label("Panel", systemImage: "gauge.with.dots.needle.50percent") }
-            AdminView()
-                .tabItem { Label("Admin", systemImage: "person.2.badge.gearshape") }
+            if app.showsAdmin {
+                AdminView()
+                    .tabItem { Label("Admin", systemImage: "person.2.badge.gearshape") }
+            }
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
+        .task(id: app.activeInstance?.id) { await app.refreshAccess() }
     }
 }
 

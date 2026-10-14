@@ -18,10 +18,13 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
 
     var latency: Duration
     var failureRate: Double
+    /// What `panelAccess()` reports; the demo signs in as a superuser.
+    var grantedAccess: PanelAccess
 
-    init(latency: Duration = .milliseconds(350), failureRate: Double = 0) {
+    init(latency: Duration = .milliseconds(350), failureRate: Double = 0, access: PanelAccess = .superuser) {
         self.latency = latency
         self.failureRate = failureRate
+        self.grantedAccess = access
     }
 
     private func simulate() async throws {
@@ -262,6 +265,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     }
 
     // MARK: Users & roles
+    func panelAccess() async throws -> PanelAccess { try await simulate(); return sync { grantedAccess } }
     func users() async throws -> [CraftyUser] { try await simulate(); return sync { users } }
     func saveUser(_ user: CraftyUser, password: String?) async throws {
         try await simulate()

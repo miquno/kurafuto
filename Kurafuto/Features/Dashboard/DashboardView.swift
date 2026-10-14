@@ -69,14 +69,16 @@ struct DashboardView: View {
                     .foregroundStyle(Theme.warning)
                     .accessibilityLabel("Demo mode, all data is sample data")
             }
-            Button { showCreate = true } label: {
-                Image(systemName: "plus").font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44)
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.stroke))
+            if app.canCreateServers {
+                Button { showCreate = true } label: {
+                    Image(systemName: "plus").font(.body.weight(.semibold))
+                        .frame(width: 44, height: 44)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.stroke))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Create server")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Create server")
         }
         .padding(.top, 8)
     }
@@ -104,10 +106,13 @@ struct DashboardView: View {
             ContentUnavailableView {
                 Label("No Servers", systemImage: "server.rack")
             } description: {
-                Text("Create your first server on this panel.")
+                Text(app.canCreateServers ? "Create your first server on this panel."
+                                          : "No server on this panel is shared with your account.")
             } actions: {
-                Button("Create Server") { showCreate = true }
-                    .buttonStyle(InstrumentButtonStyle()).frame(width: 180)
+                if app.canCreateServers {
+                    Button("Create Server") { showCreate = true }
+                        .buttonStyle(InstrumentButtonStyle()).frame(width: 180)
+                }
             }
             .entrance(1)
         } else if visible.isEmpty {
