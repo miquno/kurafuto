@@ -28,6 +28,7 @@ distance from "Crafty Controller".
 
 **Remaining to-dos before release**
 - Check trademark registers: **DPMA** (register.dpma.de), **EUIPO TMview**, classes 9 (software) and 42 (SaaS).
+- If clear, register "Kurafuto" as a word mark (optionally the icon as a figurative mark) – name and icon are excluded from the MIT licence (ADR 0007), but only a registered mark makes that reliably enforceable.
 - Search the App Store for existing apps named Kurafuto.
 - Domain: **getkurafuto.app** (ADR 0006). kurafuto.com belongs to an unrelated personal blog and kurafuto.app is registered by someone else; neither is a competing product.
 

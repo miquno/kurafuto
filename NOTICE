@@ -3,6 +3,11 @@ Copyright (c) 2026 miquno and Kurafuto contributors
 
 The Kurafuto source code is licensed under the MIT License (see LICENSE).
 
+Name and app icon: the name "Kurafuto" and the app icon (the image files and
+the pixel map and palette that render it) are not licensed under the MIT
+License. All rights reserved. Forks and redistributions may use the code but
+must use a different name and icon. See docs/decisions/0007.
+
 Kurafuto is an independent, unofficial client. It is not affiliated with,
 endorsed by, or sponsored by Arcadia Technology, Mojang Studios or Microsoft.
 

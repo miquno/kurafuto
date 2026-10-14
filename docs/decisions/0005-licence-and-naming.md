@@ -1,6 +1,6 @@
 # 0005. MIT licence and the name "Kurafuto"
 
-- Status: Accepted
+- Status: Accepted; licence scope amended by [0007](0007-name-and-icon-outside-mit.md) (name and icon not under MIT)
 - Date: 2026-10-14
 
 ## Context
