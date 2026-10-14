@@ -52,4 +52,11 @@ final class MockServiceTests: XCTestCase {
     func testMotdFormattingIsStripped() {
         XCTAssertEqual("§aWelcome §lto the SMP".strippingMinecraftFormatting, "Welcome to the SMP")
     }
+
+    func testSelectingActiveDemoPanelStaysInDemo() {
+        let app = AppState.preview
+        app.switchTo(MockData.instance)
+        XCTAssertTrue(app.isMock)
+        XCTAssertTrue(app.service is MockCraftyService)
+    }
 }
