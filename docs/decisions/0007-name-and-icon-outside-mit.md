@@ -1,6 +1,6 @@
 # 0007. Name and app icon are not covered by the MIT licence
 
-- Status: Accepted
+- Status: Accepted; trademark registration dropped by [0008](0008-no-trademark-registration.md)
 - Date: 2026-10-14
 
 ## Context
