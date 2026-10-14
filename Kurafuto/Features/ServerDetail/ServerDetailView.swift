@@ -12,35 +12,18 @@ struct ServerDetailView: View {
     @State private var confirm: ConfirmAction?
 
     var body: some View {
-        List {
-            Section {
-                header
-                controls
+        ScrollView {
+            VStack(spacing: 16) {
+                header.entrance(0)
+                controls.entrance(1)
+                if let s = stats, s.running { live(s).entrance(2) }
+                manage.entrance(3)
+                connection.entrance(4)
             }
-            if let s = stats, s.running { metrics(s) }
-
-            Section("Manage") {
-                nav("Console", "terminal.fill") { ConsoleView(server: server) }
-                nav("Logs", "doc.text.magnifyingglass") { LogsView(server: server) }
-                nav("Players", "person.3.fill", badge: stats?.online) { PlayersView(server: server) }
-                nav("Schedules", "calendar.badge.clock") { SchedulesView(server: server) }
-                nav("Backups", "externaldrive.fill") { BackupsView(server: server) }
-                nav("Files", "folder.fill") { FileBrowserView(server: server, path: "") }
-                nav("server.properties", "slider.horizontal.3") { PropertiesEditorView(server: server) }
-                nav("Webhooks", "bell.badge.fill") { WebhooksView(server: server) }
-                nav("Configuration", "gearshape.2.fill") { ServerSettingsView(server: $server) }
-            }
-
-            Section("Connection") {
-                LabeledContent("Address") {
-                    Text(verbatim: "\(app.activeInstance?.baseURL.host() ?? server.serverIP):\(server.serverPort)")
-                        .textSelection(.enabled).monospaced()
-                }
-                if let world = stats?.worldName { LabeledContent("World", value: world) }
-                if let size = stats?.worldSize { LabeledContent("World size", value: size) }
-                if let started = stats?.started { LabeledContent("Started", value: started) }
-            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
         }
+        .themedBackground()
         .navigationTitle(server.serverName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -53,7 +36,8 @@ struct ServerDetailView: View {
                     confirm = ConfirmAction(title: "Kill process?", message: "Kill stops the server immediately without saving.",
                                             buttonLabel: "Kill") { await run(.kill) }
                 } label: { Label("Kill", systemImage: ServerAction.kill.symbol) }
-            } label: { Image(systemName: "ellipsis.circle") }
+            } label: { Image(systemName: "ellipsis") }
+            .accessibilityLabel("More actions")
         }
         .confirmationDialog(confirm?.title ?? "", isPresented: .constant(confirm != nil), titleVisibility: .visible,
                             presenting: confirm) { c in
@@ -64,25 +48,33 @@ struct ServerDetailView: View {
         .refreshable { await refresh() }
     }
 
+    // MARK: Sections
+
     private var header: some View {
-        HStack(spacing: 14) {
-            ServerIcon(base64: stats?.icon, type: server.type).scaleEffect(1.2).padding(4)
-            VStack(alignment: .leading, spacing: 6) {
-                if let s = stats { StatusBadge(status: s.status) }
+        HStack(alignment: .top, spacing: 14) {
+            ServerIcon(base64: stats?.icon, type: server.type)
+            VStack(alignment: .leading, spacing: 4) {
+                StatusBadge(status: stats?.status ?? .offline)
                 Text(stats?.desc?.strippingMinecraftFormatting ?? server.type.label)
-                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                    .font(.subheadline)
+                    .lineLimit(2)
+                Text("\(stats?.version ?? server.type.label) · :\(String(server.serverPort))")
+                    .font(.mono(.caption))
+                    .foregroundStyle(Theme.secondaryText)
             }
+            Spacer(minLength: 8)
+            if let s = stats { PlayerCount(online: s.online, max: s.max, large: true) }
         }
+        .card(padding: 18)
     }
 
     private var controls: some View {
-        HStack(spacing: 10) {
-            let running = stats?.running == true
-            actionButton(.start, enabled: !running, color: .green)
-            actionButton(.restart, enabled: running, color: .orange)
-            actionButton(.stop, enabled: running, color: .red)
+        let running = stats?.running == true
+        return HStack(spacing: 10) {
+            actionButton(.start, enabled: !running, color: Theme.accent)
+            actionButton(.restart, enabled: running, color: Theme.warning)
+            actionButton(.stop, enabled: running, color: Theme.danger)
         }
-        .buttonStyle(.borderless)
     }
 
     private func actionButton(_ a: ServerAction, enabled: Bool, color: Color) -> some View {
@@ -93,41 +85,138 @@ struct ServerDetailView: View {
             } else { Task { await run(a) } }
         } label: {
             VStack(spacing: 4) {
-                if busyAction == a { ProgressView() } else { Image(systemName: a.symbol).font(.title3) }
-                Text(a.label).font(.caption.weight(.medium))
+                if busyAction == a { ProgressView().tint(color) } else { Image(systemName: a.symbol).font(.title3) }
+                Text(a.label).font(.caption.weight(.semibold))
             }
-            .frame(maxWidth: .infinity).padding(.vertical, 10)
-            .background(color.opacity(enabled ? 0.15 : 0.05), in: RoundedRectangle(cornerRadius: 12))
-            .foregroundStyle(enabled ? color : .secondary)
+            .padding(.vertical, 8)
         }
+        .buttonStyle(InstrumentButtonStyle(kind: .tinted, color: color))
         .disabled(!enabled || busyAction != nil)
     }
 
-    private func metrics(_ s: ServerStats) -> some View {
-        Section("Live") {
+    private func live(_ s: ServerStats) -> some View {
+        VStack(spacing: 10) {
+            SectionLabel("Live")
             HStack(spacing: 10) {
-                MetricCard(title: "CPU", value: s.cpu, caption: String(format: "%.1f%%", s.cpu))
-                MetricCard(title: "RAM", value: s.memPercent, caption: s.mem)
+                GaugeTile(title: "CPU", value: s.cpu, color: Theme.cpu, delay: 0.2)
+                GaugeTile(title: "RAM", value: s.memPercent, color: Theme.ram, caption: s.mem, delay: 0.3)
+                ValueTile(title: "World", value: s.worldSize ?? "–", color: Theme.storage)
             }
-            .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-            if history.count > 2 {
-                Chart(history) { p in
-                    LineMark(x: .value("Time", p.date), y: .value("CPU", p.cpu)).foregroundStyle(by: .value("Metric", "CPU"))
-                    LineMark(x: .value("Time", p.date), y: .value("RAM", p.mem)).foregroundStyle(by: .value("Metric", "RAM"))
-                }
-                .chartYScale(domain: 0...100)
-                .frame(height: 140)
-            }
+            .fixedSize(horizontal: false, vertical: true)
+            if history.count > 2 { chart.card() }
         }
     }
 
-    private func nav<D: View>(_ title: String, _ symbol: String, badge: Int? = nil,
-                              @ViewBuilder destination: @escaping () -> D) -> some View {
-        NavigationLink { destination() } label: {
-            Label(title, systemImage: symbol)
-                .badge(badge ?? 0)
+    private var chart: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                legend("CPU", Theme.cpu)
+                legend("RAM", Theme.ram)
+                Spacer()
+                Text("live").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+            }
+            Chart(history) { p in
+                AreaMark(x: .value("Time", p.date), y: .value("CPU", p.cpu), series: .value("Metric", "CPU"))
+                    .foregroundStyle(LinearGradient(colors: [Theme.cpu.opacity(0.25), .clear], startPoint: .top, endPoint: .bottom))
+                    .interpolationMethod(.monotone)
+                LineMark(x: .value("Time", p.date), y: .value("CPU", p.cpu), series: .value("Metric", "CPU"))
+                    .foregroundStyle(Theme.cpu)
+                    .interpolationMethod(.monotone)
+                LineMark(x: .value("Time", p.date), y: .value("RAM", p.mem), series: .value("Metric", "RAM"))
+                    .foregroundStyle(Theme.ram)
+                    .interpolationMethod(.monotone)
+            }
+            .chartYScale(domain: 0...100)
+            .chartXAxis(.hidden)
+            .chartYAxis {
+                AxisMarks(values: [0, 50, 100]) { _ in
+                    AxisGridLine().foregroundStyle(Theme.divider)
+                    AxisValueLabel().font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                }
+            }
+            .frame(height: 130)
+            .animation(.snappy, value: history.count)
+            .accessibilityLabel("CPU and RAM over time")
         }
     }
+
+    private func legend(_ title: String, _ color: Color) -> some View {
+        HStack(spacing: 6) {
+            Capsule().fill(color).frame(width: 12, height: 4)
+            Text(title).font(.mono(.caption2, weight: .medium))
+        }
+    }
+
+    private var manage: some View {
+        VStack(spacing: 10) {
+            SectionLabel("Manage")
+            VStack(spacing: 0) {
+                nav("Console", "terminal.fill", Theme.accent) { ConsoleView(server: server) }
+                nav("Logs", "doc.text.magnifyingglass", Theme.accent) { LogsView(server: server) }
+                nav("Players", "person.2.fill", Theme.players, badge: stats?.online) { PlayersView(server: server) }
+                nav("Schedules", "calendar.badge.clock", Theme.accent) { SchedulesView(server: server) }
+                nav("Backups", "externaldrive.fill", Theme.storage) { BackupsView(server: server) }
+                nav("Files", "folder.fill", Theme.storage) { FileBrowserView(server: server, path: "") }
+                nav("server.properties", "slider.horizontal.3", Theme.accent) { PropertiesEditorView(server: server) }
+                nav("Webhooks", "bell.badge.fill", Theme.accent) { WebhooksView(server: server) }
+                nav("Configuration", "gearshape.2.fill", Theme.secondaryText, last: true) { ServerSettingsView(server: $server) }
+            }
+            .card(padding: 0)
+        }
+    }
+
+    private var connection: some View {
+        VStack(spacing: 10) {
+            SectionLabel("Connection")
+            VStack(spacing: 12) {
+                detail("Address") {
+                    Text(verbatim: "\(app.activeInstance?.baseURL.host() ?? server.serverIP):\(server.serverPort)")
+                        .textSelection(.enabled)
+                }
+                if let world = stats?.worldName { detail("World") { Text(world) } }
+                if let size = stats?.worldSize { detail("World size") { Text(size) } }
+                if let started = stats?.started { detail("Started") { Text(started) } }
+            }
+            .card()
+        }
+    }
+
+    private func detail<V: View>(_ title: String, @ViewBuilder value: () -> V) -> some View {
+        HStack {
+            Text(title).foregroundStyle(Theme.secondaryText)
+            Spacer()
+            value().font(.mono(.footnote))
+        }
+        .font(.subheadline)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func nav<D: View>(_ title: String, _ symbol: String, _ color: Color, badge: Int? = nil, last: Bool = false,
+                              @ViewBuilder destination: @escaping () -> D) -> some View {
+        NavigationLink { destination() } label: {
+            HStack(spacing: 12) {
+                IconTile(symbol: symbol, color: color, size: 32)
+                Text(title).foregroundStyle(.primary)
+                Spacer()
+                if let badge, badge > 0 {
+                    Text("\(badge)").font(.mono(.caption, weight: .semibold))
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Theme.players.opacity(0.16), in: Capsule())
+                        .foregroundStyle(Theme.players)
+                }
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Theme.secondaryText)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .contentShape(Rectangle())
+            .overlay(alignment: .bottom) {
+                if !last { Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 56) }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Data
 
     private func refresh() async {
         guard let s = try? await app.service.stats(serverID: server.id) else { return }

@@ -17,17 +17,20 @@ struct ConsoleView: View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 2) {
+                    LazyVStack(alignment: .leading, spacing: 3) {
                         ForEach(visible) { line in
                             Text(line.text)
-                                .font(.system(.caption, design: .monospaced))
+                                .font(.mono(.caption))
                                 .foregroundStyle(color(line.level))
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(line.id)
+                                .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity),
+                                                        removal: .opacity))
                         }
                     }
-                    .padding(10)
+                    .padding(12)
+                    .animation(.snappy(duration: 0.25), value: lines.count)
                 }
                 .background(Theme.console)
                 .onChange(of: lines.count) {
@@ -35,38 +38,64 @@ struct ConsoleView: View {
                 }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    ForEach(quick, id: \.self) { cmd in
-                        Button(cmd) { Task { await send(cmd) } }
-                            .buttonStyle(.bordered).controlSize(.small)
+            VStack(spacing: 10) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(quick, id: \.self) { cmd in
+                            Button(cmd) { Task { await send(cmd) } }
+                                .font(.mono(.caption, weight: .medium))
+                                .padding(.horizontal, 12)
+                                .frame(minHeight: 34)
+                                .background(Theme.sunken, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Theme.stroke))
+                                .foregroundStyle(.primary)
+                        }
                     }
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal).padding(.vertical, 6)
-            }
 
-            HStack {
-                Text(">").monospaced().foregroundStyle(Theme.accent)
-                TextField("Command without /", text: $input)
-                    .monospaced().textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .focused($focused)
-                    .submitLabel(.send)
-                    .onSubmit { Task { await send(input) } }
-                Menu {
-                    ForEach(history.reversed().prefix(10), id: \.self) { h in Button(h) { input = h } }
-                } label: { Image(systemName: "clock.arrow.circlepath") }
-                .disabled(history.isEmpty)
-                Button { Task { await send(input) } } label: { Image(systemName: "paperplane.fill") }
+                HStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text(">").font(.mono(.body, weight: .semibold)).foregroundStyle(Theme.accent)
+                            .accessibilityHidden(true)
+                        TextField("Command without /", text: $input)
+                            .font(.mono(.body))
+                            .textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .focused($focused)
+                            .submitLabel(.send)
+                            .onSubmit { Task { await send(input) } }
+                        Menu {
+                            ForEach(history.reversed().prefix(10), id: \.self) { h in Button(h) { input = h } }
+                        } label: { Image(systemName: "clock.arrow.circlepath").foregroundStyle(Theme.secondaryText) }
+                        .disabled(history.isEmpty)
+                        .accessibilityLabel("Command history")
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .background(Theme.sunken, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.stroke))
+
+                    Button { Task { await send(input) } } label: {
+                        Image(systemName: "arrow.right").font(.body.weight(.bold))
+                    }
+                    .buttonStyle(InstrumentButtonStyle())
+                    .frame(width: 48)
                     .disabled(input.isEmpty)
+                    .accessibilityLabel("Send command")
+                }
+                .padding(.horizontal, 16)
             }
-            .padding()
-            .background(.bar)
+            .padding(.vertical, 12)
+            .background(Theme.surface)
+            .overlay(alignment: .top) { Rectangle().fill(Theme.stroke).frame(height: 1) }
         }
+        .background(Theme.background.ignoresSafeArea())
         .navigationTitle("Console")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $filter, prompt: "Filter")
         .toolbar {
             Toggle(isOn: $autoScroll) { Image(systemName: "arrow.down.to.line") }
+                .accessibilityLabel("Auto-scroll")
             ShareLink(item: lines.map(\.text).joined(separator: "\n")) { Image(systemName: "square.and.arrow.up") }
         }
         .task {
@@ -80,11 +109,11 @@ struct ConsoleView: View {
 
     private func color(_ l: LogLine.Level) -> Color {
         switch l {
-        case .info: .white.opacity(0.85)
-        case .warn: .yellow
-        case .error: .red
-        case .command: Theme.accent
-        case .chat: .cyan
+        case .info: Theme.consoleText
+        case .warn: Theme.consoleWarning
+        case .error: Theme.consoleError
+        case .command: Theme.consoleCommand
+        case .chat: Theme.consoleChat
         }
     }
 
@@ -106,15 +135,33 @@ struct LogsView: View {
 
     var body: some View {
         LoadableView(state: state, retry: load) { lines in
-            List(lines.filter { !onlyProblems || $0.contains("WARN") || $0.contains("ERROR") }, id: \.self) {
-                Text($0).font(.system(.caption2, design: .monospaced))
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(shown(lines).enumerated()), id: \.offset) { _, line in
+                        Text(line)
+                            .font(.mono(.caption2))
+                            .foregroundStyle(line.contains("ERROR") ? Theme.consoleError
+                                             : line.contains("WARN") ? Theme.consoleWarning
+                                             : Theme.consoleText)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(12)
             }
-            .listStyle(.plain)
+            .background(Theme.console)
+            .entrance()
         }
+        .background(Theme.console.ignoresSafeArea())
         .navigationTitle("Logs")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar { Toggle("Warnings only", isOn: $onlyProblems) }
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    private func shown(_ lines: [String]) -> [String] {
+        lines.filter { !onlyProblems || $0.contains("WARN") || $0.contains("ERROR") }
     }
 
     private func load() async {

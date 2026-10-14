@@ -8,7 +8,6 @@ struct KurafutoApp: App {
         WindowGroup {
             RootView()
                 .environment(app)
-                .tint(Theme.accent)
         }
     }
 }
@@ -84,11 +83,13 @@ struct RootView: View {
                 MainTabView()
             }
         }
+        .tint(Theme.accent)
+        .preferredColorScheme(Appearance.shared.mode.colorScheme)
         // Hides panel addresses, IPs and console output from the app switcher snapshot.
         .overlay {
             if scenePhase != .active {
                 ZStack {
-                    Rectangle().fill(.background)
+                    Rectangle().fill(Theme.background)
                     Image(systemName: "cube.transparent.fill").font(.system(size: 56)).foregroundStyle(Theme.accent)
                 }
                 .ignoresSafeArea()

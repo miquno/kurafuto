@@ -9,7 +9,7 @@
 	<!-- Kurafuto collects nothing. The only network peer is the panel the user adds. -->
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array/>
-	<!-- UserDefaults via @AppStorage in SettingsView (app-only preferences). -->
+	<!-- UserDefaults via @AppStorage in SettingsView and Appearance (app-only preferences). -->
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>

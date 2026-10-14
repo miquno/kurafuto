@@ -11,7 +11,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 | `Core/Networking/` | `APIClient`: bearer auth, `{status,data}` envelope, ephemeral `URLSession`, certificate pinning delegate |
 | `Core/Services/` | `CraftyService` protocol, `LiveCraftyService` (real API, ✅/⚠️ markers), `MockCraftyService` + `MockData` |
 | `Core/Storage/` | `KeychainStore` (tokens), `InstanceStore` (panel list in Application Support, no secrets) |
-| `DesignSystem/` | `Theme`, `StatusBadge`, `MetricCard`, `Loadable`/`LoadableView`, `ConfirmAction` |
+| `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView`, `ConfirmAction` |
 | `Features/<Area>/` | One folder per panel area: Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |
 | `Resources/` | `PrivacyInfo.xcprivacy`; generated `Info.plist` (gitignored) |
 
@@ -22,4 +22,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 - Panel strings (MOTD, logs, file contents) are plain text. Never render them as HTML or `AttributedString(markdown:)`.
 - File paths passed to the panel come from the panel's own listings; never build them from free text without validation.
 - Every `Features/` screen has a `#Preview` backed by `AppState.preview`.
+- Colors come from `Theme` only (no hard-coded or system colors in features), so all three theme modes and the user's accent choices apply. Data values use `Font.mono`.
+- Lists and forms use `.themedBackground()` and wrap their content in a `Group { … }.themedRows()`; custom screens use `.card()`.
+- Motion goes through `.entrance()`, `RingGauge` and `MeterBar`, which respect Reduce Motion. Don't add animations that ignore it.
 - Do not add a network host other than the user's panel (see root `AGENTS.md`, privacy rules).

@@ -13,3 +13,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Host metrics and panel announcements.
 - Multiple panels, Face ID setting, and a privacy cover in the app switcher.
 - Settings link to the website and privacy policy at getkurafuto.app.
+- New "Instrument" design on every screen: dark, gray and light modes, and your own accent color for the app, CPU, RAM, players and storage (Settings → Appearance).
+- Animated gauges, live charts and build-up animations; with Reduce Motion they become simple fades.

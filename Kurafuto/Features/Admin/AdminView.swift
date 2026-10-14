@@ -13,35 +13,40 @@ struct AdminView: View {
         NavigationStack {
             LoadableView(state: users, retry: load) { list in
                 List {
-                    Section("Users") {
-                        ForEach(list) { u in
-                            Button { editUser = u } label: {
-                                HStack {
-                                    Image(systemName: u.superuser ? "crown.fill" : "person.fill")
-                                        .foregroundStyle(u.superuser ? .yellow : Theme.accent).frame(width: 26)
-                                    VStack(alignment: .leading) {
-                                        Text(u.username).foregroundStyle(u.enabled ? .primary : .secondary)
-                                        Text(roleNames(u)).font(.caption).foregroundStyle(.secondary)
+                    Group {
+                        Section("Users") {
+                            ForEach(list) { u in
+                                Button { editUser = u } label: {
+                                    HStack {
+                                        IconTile(symbol: u.superuser ? "crown.fill" : "person.fill",
+                                                 color: u.superuser ? Theme.warning : Theme.accent, size: 32)
+                                        VStack(alignment: .leading) {
+                                            Text(u.username).foregroundStyle(u.enabled ? .primary : Theme.secondaryText)
+                                            Text(roleNames(u)).font(.caption).foregroundStyle(Theme.secondaryText)
+                                        }
+                                        Spacer()
+                                        if !u.enabled { Text("DISABLED").font(.mono(.caption2, weight: .semibold)).foregroundStyle(Theme.warning) }
                                     }
-                                    Spacer()
-                                    if !u.enabled { Text("disabled").font(.caption).foregroundStyle(.orange) }
+                                }
+                            }
+                        }
+                        Section("Roles") {
+                            ForEach(roles) { r in
+                                Button { editRole = r } label: {
+                                    HStack {
+                                        Text(r.roleName).foregroundStyle(.primary)
+                                        Spacer()
+                                        if r.mfaRequired { Image(systemName: "lock.shield").foregroundStyle(Theme.secondaryText) }
+                                        Text("\(r.servers.count) servers").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                                    }
                                 }
                             }
                         }
                     }
-                    Section("Roles") {
-                        ForEach(roles) { r in
-                            Button { editRole = r } label: {
-                                HStack {
-                                    Text(r.roleName).foregroundStyle(.primary)
-                                    Spacer()
-                                    if r.mfaRequired { Image(systemName: "lock.shield").foregroundStyle(.secondary) }
-                                    Text("\(r.servers.count) servers").font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
+                    .themedRows()
                 }
+                .themedBackground()
+                .entrance()
                 .refreshable { await load() }
             }
             .navigationTitle("Admin")
@@ -54,6 +59,7 @@ struct AdminView: View {
                         editRole = Role(roleID: 0, roleName: "", manager: nil, mfaRequired: false, servers: [])
                     }
                 } label: { Image(systemName: "plus") }
+                .accessibilityLabel("Add user or role")
             }
             .sheet(item: $editUser) { u in
                 UserEditor(user: u, roles: roles) { saved, pw in
@@ -100,29 +106,33 @@ struct UserEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Username", text: $user.username).textInputAutocapitalization(.never)
-                SecureField(user.userID == 0 ? "Password" : "New password (optional)", text: $password)
-                Toggle("Enabled", isOn: $user.enabled)
-                Toggle("Superuser", isOn: $user.superuser)
-                Picker("Language", selection: $user.lang) {
-                    Text("English").tag("en_EN"); Text("Deutsch").tag("de_DE")
-                }
-                if !user.superuser {
-                    Section("Roles") {
-                        ForEach(roles) { r in
-                            Toggle(r.roleName, isOn: Binding(get: { user.roleIDs.contains(r.roleID) }, set: { on in
-                                if on { user.roleIDs.append(r.roleID) } else { user.roleIDs.removeAll { $0 == r.roleID } }
-                            }))
+                Group {
+                    TextField("Username", text: $user.username).textInputAutocapitalization(.never)
+                    SecureField(user.userID == 0 ? "Password" : "New password (optional)", text: $password)
+                    Toggle("Enabled", isOn: $user.enabled)
+                    Toggle("Superuser", isOn: $user.superuser)
+                    Picker("Language", selection: $user.lang) {
+                        Text("English").tag("en_EN"); Text("Deutsch").tag("de_DE")
+                    }
+                    if !user.superuser {
+                        Section("Roles") {
+                            ForEach(roles) { r in
+                                Toggle(r.roleName, isOn: Binding(get: { user.roleIDs.contains(r.roleID) }, set: { on in
+                                    if on { user.roleIDs.append(r.roleID) } else { user.roleIDs.removeAll { $0 == r.roleID } }
+                                }))
+                            }
+                        }
+                    }
+                    if let last = user.lastLogin {
+                        Section("Activity") {
+                            LabeledContent("Last login", value: last)
+                            if let ip = user.lastIP { LabeledContent("IP", value: ip) }
                         }
                     }
                 }
-                if let last = user.lastLogin {
-                    Section("Activity") {
-                        LabeledContent("Last login", value: last)
-                        if let ip = user.lastIP { LabeledContent("IP", value: ip) }
-                    }
-                }
+                .themedRows()
             }
+            .themedBackground()
             .navigationTitle(user.userID == 0 ? "New User" : user.username)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -145,27 +155,31 @@ struct RoleEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Role name", text: $role.roleName)
-                Toggle("Require 2FA for members", isOn: $role.mfaRequired)
-                ForEach(servers) { s in
-                    Section(s.serverName) {
-                        let idx = index(for: s)
-                        Toggle("Access", isOn: Binding(get: { idx != nil }, set: { on in
-                            if on { role.servers.append(RoleServerPermission(serverID: s.id, permissions: "00100000")) }
-                            else { role.servers.removeAll { $0.serverID == s.id } }
-                        }))
-                        if let i = idx {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], alignment: .leading) {
-                                ForEach(ServerPermission.allCases) { p in
-                                    Toggle(p.label, isOn: Binding(get: { role.servers[i].has(p) },
-                                                                  set: { role.servers[i].set(p, $0) }))
-                                        .toggleStyle(.button).controlSize(.small)
+                Group {
+                    TextField("Role name", text: $role.roleName)
+                    Toggle("Require 2FA for members", isOn: $role.mfaRequired)
+                    ForEach(servers) { s in
+                        Section(s.serverName) {
+                            let idx = index(for: s)
+                            Toggle("Access", isOn: Binding(get: { idx != nil }, set: { on in
+                                if on { role.servers.append(RoleServerPermission(serverID: s.id, permissions: "00100000")) }
+                                else { role.servers.removeAll { $0.serverID == s.id } }
+                            }))
+                            if let i = idx {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], alignment: .leading) {
+                                    ForEach(ServerPermission.allCases) { p in
+                                        Toggle(p.label, isOn: Binding(get: { role.servers[i].has(p) },
+                                                                      set: { role.servers[i].set(p, $0) }))
+                                            .toggleStyle(.button).controlSize(.small)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .themedRows()
             }
+            .themedBackground()
             .navigationTitle(role.roleID == 0 ? "New Role" : role.roleName)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

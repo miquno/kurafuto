@@ -15,30 +15,34 @@ struct CreateServerView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Server name", text: $req.name)
-                Picker("Edition", selection: $req.kind) {
-                    Text("Java").tag(CreateServerRequest.Kind.java)
-                    Text("Bedrock").tag(CreateServerRequest.Kind.bedrock)
-                }.pickerStyle(.segmented)
+                Group {
+                    TextField("Server name", text: $req.name)
+                    Picker("Edition", selection: $req.kind) {
+                        Text("Java").tag(CreateServerRequest.Kind.java)
+                        Text("Bedrock").tag(CreateServerRequest.Kind.bedrock)
+                    }.pickerStyle(.segmented)
 
-                if req.kind == .java {
-                    Section("Software") {
-                        Picker("Type", selection: $req.jarType) { ForEach(jarTypes, id: \.self) { Text($0.capitalized) } }
-                        Picker("Version", selection: $req.version) { ForEach(versions, id: \.self) { Text($0) } }
+                    if req.kind == .java {
+                        Section("Software") {
+                            Picker("Type", selection: $req.jarType) { ForEach(jarTypes, id: \.self) { Text($0.capitalized) } }
+                            Picker("Version", selection: $req.version) { ForEach(versions, id: \.self) { Text($0) } }
+                        }
+                        Section("Resources") {
+                            Stepper("Min RAM: \(req.memMinGB) GB", value: $req.memMinGB, in: 1...req.memMaxGB)
+                            Stepper("Max RAM: \(req.memMaxGB) GB", value: $req.memMaxGB, in: req.memMinGB...64)
+                            TextField("Port", value: $req.port, format: .number.grouping(.never)).keyboardType(.numberPad)
+                        }
+                    } else {
+                        Toggle(isOn: $req.agreeToEULA) {
+                            Text("I accept the Minecraft EULA and the Mojang/Microsoft privacy policy")
+                        }
                     }
-                    Section("Resources") {
-                        Stepper("Min RAM: \(req.memMinGB) GB", value: $req.memMinGB, in: 1...req.memMaxGB)
-                        Stepper("Max RAM: \(req.memMaxGB) GB", value: $req.memMaxGB, in: req.memMinGB...64)
-                        TextField("Port", value: $req.port, format: .number.grouping(.never)).keyboardType(.numberPad)
-                    }
-                } else {
-                    Toggle(isOn: $req.agreeToEULA) {
-                        Text("I accept the Minecraft EULA and the Mojang/Microsoft privacy policy")
-                    }
+
+                    if let error { Text(error).foregroundStyle(Theme.danger) }
                 }
-
-                if let error { Text(error).foregroundStyle(.red) }
+                .themedRows()
             }
+            .themedBackground()
             .navigationTitle("New Server")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

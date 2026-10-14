@@ -14,14 +14,19 @@ struct FileBrowserView: View {
     var body: some View {
         LoadableView(state: state, retry: load) { entries in
             List(entries.sorted { ($0.isDirectory ? 0 : 1, $0.name) < ($1.isDirectory ? 0 : 1, $1.name) }) { e in
-                if e.isDirectory {
-                    NavigationLink { FileBrowserView(server: server, path: e.path) } label: { row(e) }
-                } else if e.isEditableText {
-                    NavigationLink { TextFileEditor(server: server, path: e.path) } label: { row(e) }
-                } else {
-                    row(e)
+                Group {
+                    if e.isDirectory {
+                        NavigationLink { FileBrowserView(server: server, path: e.path) } label: { row(e) }
+                    } else if e.isEditableText {
+                        NavigationLink { TextFileEditor(server: server, path: e.path) } label: { row(e) }
+                    } else {
+                        row(e)
+                    }
                 }
+                .themedRows()
             }
+            .themedBackground()
+            .entrance()
             .overlay { if entries.isEmpty { ContentUnavailableView("Empty Folder", systemImage: "folder") } }
         }
         .navigationTitle(path.isEmpty ? "Files" : (path as NSString).lastPathComponent)
@@ -30,6 +35,7 @@ struct FileBrowserView: View {
                 Button { showNewFolder = true } label: { Label("New Folder", systemImage: "folder.badge.plus") }
                 Button { showImporter = true } label: { Label("Upload", systemImage: "square.and.arrow.up") }
             } label: { Image(systemName: "plus") }
+            .accessibilityLabel("Add")
         }
         .alert("New Folder", isPresented: $showNewFolder) {
             TextField("Name", text: $newFolder)
@@ -46,11 +52,11 @@ struct FileBrowserView: View {
 
     private func row(_ e: FileEntry) -> some View {
         HStack {
-            Image(systemName: e.isDirectory ? "folder.fill" : e.isEditableText ? "doc.text" : "doc")
-                .foregroundStyle(e.isDirectory ? Theme.accent : .secondary).frame(width: 26)
-            Text(e.name)
+            IconTile(symbol: e.isDirectory ? "folder.fill" : e.isEditableText ? "doc.text" : "doc",
+                     color: e.isDirectory ? Theme.storage : Theme.secondaryText, size: 30)
+            Text(e.name).font(.mono(.subheadline))
             Spacer()
-            if let s = e.size { Text(s.byteString).font(.caption).foregroundStyle(.secondary) }
+            if let s = e.size { Text(s.byteString).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText) }
         }
         .swipeActions {
             Button(role: .destructive) {
@@ -75,8 +81,10 @@ struct TextFileEditor: View {
 
     var body: some View {
         TextEditor(text: $text)
-            .font(.system(.footnote, design: .monospaced))
+            .font(.mono(.footnote))
             .autocorrectionDisabled().textInputAutocapitalization(.never)
+            .padding(.horizontal, 8)
+            .themedBackground()
             .navigationTitle((path as NSString).lastPathComponent)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -104,20 +112,29 @@ struct PropertiesEditorView: View {
 
     var body: some View {
         Form {
-            ForEach(props.indices, id: \.self) { i in
-                let key = props[i].key
-                if props[i].value == "true" || props[i].value == "false" {
-                    Toggle(key, isOn: Binding(get: { props[i].value == "true" },
-                                              set: { props[i].value = $0 ? "true" : "false"; dirty = true }))
-                } else {
-                    LabeledContent(key) {
-                        TextField(key, text: Binding(get: { props[i].value }, set: { props[i].value = $0; dirty = true }))
-                            .multilineTextAlignment(.trailing).monospaced()
+            Group {
+                ForEach(props.indices, id: \.self) { i in
+                    let key = props[i].key
+                    if props[i].value == "true" || props[i].value == "false" {
+                        Toggle(isOn: Binding(get: { props[i].value == "true" },
+                                             set: { props[i].value = $0 ? "true" : "false"; dirty = true })) {
+                            Text(key).font(.mono(.footnote))
+                        }
+                    } else {
+                        LabeledContent {
+                            TextField(key, text: Binding(get: { props[i].value }, set: { props[i].value = $0; dirty = true }))
+                                .multilineTextAlignment(.trailing).font(.mono(.footnote))
+                        } label: {
+                            Text(key).font(.mono(.footnote))
+                        }
                     }
                 }
+                Section { Text("Changes take effect after a restart.").font(.footnote).foregroundStyle(Theme.secondaryText) }
             }
-            Section { Text("Changes take effect after a restart.").font(.footnote).foregroundStyle(.secondary) }
+            .themedRows()
         }
+        .themedBackground()
+        .entrance()
         .navigationTitle("server.properties")
         .toolbar {
             Button("Save") {

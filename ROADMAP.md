@@ -17,6 +17,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 
 - [x] SwiftUI app skeleton with `CraftyService` protocol, `MockCraftyService` and `LiveCraftyService` (ADR 0001, 0003).
 - [x] All panel areas as screens with previews.
+- [x] Visual design "Instrument" on every screen: dark, gray and light modes, per-metric accent colors, gauges and build-up animations that respect Reduce Motion.
 - [x] Privacy baseline: no third parties, Keychain tokens, Application Support storage, privacy manifest, app-switcher cover (ADR 0002).
 - [x] Self-signed certificate trust via fingerprint pinning (ADR 0004).
 - [x] Governance: `AGENTS.md` (root and folder-local), `CLAUDE.md` pointers, `CONTRIBUTING.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md`, `LICENSE`, `NOTICE`, `CODEOWNERS`, issue and PR templates, gitignored `scratch/`.

@@ -10,24 +10,32 @@ struct WebhooksView: View {
     var body: some View {
         LoadableView(state: state, retry: load) { hooks in
             List {
-                ForEach(hooks) { h in
-                    Button { editing = h } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(h.name).font(.headline).foregroundStyle(.primary)
-                                Spacer()
-                                Text(h.webhookType.rawValue).font(.caption).padding(.horizontal, 8).padding(.vertical, 2)
-                                    .background(.quaternary, in: Capsule())
+                Group {
+                    ForEach(hooks) { h in
+                        Button { editing = h } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(h.name).font(.headline).foregroundStyle(.primary)
+                                    Spacer()
+                                    Text(h.webhookType.rawValue).font(.mono(.caption2, weight: .medium))
+                                        .padding(.horizontal, 8).padding(.vertical, 3)
+                                        .background(Theme.sunken, in: Capsule())
+                                        .overlay(Capsule().strokeBorder(Theme.stroke))
+                                        .foregroundStyle(Theme.secondaryText)
+                                }
+                                Text(h.triggers.map(\.label).joined(separator: " · ")).font(.caption).foregroundStyle(Theme.secondaryText)
+                                if !h.enabled { Text("DISABLED").font(.mono(.caption2, weight: .semibold)).foregroundStyle(Theme.warning) }
                             }
-                            Text(h.triggers.map(\.label).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
-                            if !h.enabled { Text("Disabled").font(.caption2).foregroundStyle(.orange) }
                         }
                     }
+                    .onDelete { idx in
+                        Task { for i in idx { try? await app.service.deleteWebhook(id: hooks[i].id, serverID: server.id) }; await load() }
+                    }
                 }
-                .onDelete { idx in
-                    Task { for i in idx { try? await app.service.deleteWebhook(id: hooks[i].id, serverID: server.id) }; await load() }
-                }
+                .themedRows()
             }
+            .themedBackground()
+            .entrance()
             .overlay { if hooks.isEmpty { ContentUnavailableView("No Webhooks", systemImage: "bell.slash") } }
         }
         .navigationTitle("Webhooks")
@@ -36,6 +44,7 @@ struct WebhooksView: View {
                 editing = Webhook(id: 0, webhookType: .discord, name: "", url: "", botName: "Server Bot",
                                   triggers: [.serverStart, .serverStop], body: "", enabled: true)
             } label: { Image(systemName: "plus") }
+            .accessibilityLabel("New webhook")
         }
         .sheet(item: $editing) { h in
             WebhookEditor(webhook: h) { saved in
@@ -58,25 +67,29 @@ struct WebhookEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Name", text: $webhook.name)
-                Picker("Service", selection: $webhook.webhookType) {
-                    ForEach(WebhookType.allCases) { Text($0.rawValue).tag($0) }
-                }
-                TextField("Webhook URL", text: $webhook.url).keyboardType(.URL).textInputAutocapitalization(.never)
-                TextField("Bot name", text: $webhook.botName)
-                Section("Triggers") {
-                    ForEach(WebhookTrigger.allCases) { t in
-                        Toggle(t.label, isOn: Binding(get: { webhook.triggers.contains(t) }, set: { on in
-                            if on { webhook.triggers.append(t) } else { webhook.triggers.removeAll { $0 == t } }
-                        }))
+                Group {
+                    TextField("Name", text: $webhook.name)
+                    Picker("Service", selection: $webhook.webhookType) {
+                        ForEach(WebhookType.allCases) { Text($0.rawValue).tag($0) }
                     }
+                    TextField("Webhook URL", text: $webhook.url).keyboardType(.URL).textInputAutocapitalization(.never)
+                    TextField("Bot name", text: $webhook.botName)
+                    Section("Triggers") {
+                        ForEach(WebhookTrigger.allCases) { t in
+                            Toggle(t.label, isOn: Binding(get: { webhook.triggers.contains(t) }, set: { on in
+                                if on { webhook.triggers.append(t) } else { webhook.triggers.removeAll { $0 == t } }
+                            }))
+                        }
+                    }
+                    Section("Message") {
+                        TextEditor(text: $webhook.body).frame(minHeight: 80)
+                        Text("Placeholders: {server_name}, {event_type}, {user}").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                    }
+                    Toggle("Enabled", isOn: $webhook.enabled)
                 }
-                Section("Message") {
-                    TextEditor(text: $webhook.body).frame(minHeight: 80)
-                    Text("Placeholders: {server_name}, {event_type}, {user}").font(.caption).foregroundStyle(.secondary)
-                }
-                Toggle("Enabled", isOn: $webhook.enabled)
+                .themedRows()
             }
+            .themedBackground()
             .navigationTitle(webhook.id == 0 ? "New Webhook" : webhook.name)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
