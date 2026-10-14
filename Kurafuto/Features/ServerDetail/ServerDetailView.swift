@@ -32,7 +32,9 @@ struct ServerDetailView: View {
             Menu {
                 Button { Task { await run(.backup) } } label: { Label("Back Up Now", systemImage: ServerAction.backup.symbol) }
                 Button { Task { await run(.updateExecutable) } } label: { Label("Update JAR", systemImage: ServerAction.updateExecutable.symbol) }
-                Button { Task { await run(.clone) } } label: { Label("Clone", systemImage: ServerAction.clone.symbol) }
+                if app.canCreateServers {
+                    Button { Task { await run(.clone) } } label: { Label("Clone", systemImage: ServerAction.clone.symbol) }
+                }
                 Divider()
                 Button(role: .destructive) {
                     confirm = ConfirmAction(title: "Kill process?", message: "Kill stops the server immediately without saving.",

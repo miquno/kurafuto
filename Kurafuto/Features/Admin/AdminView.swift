@@ -14,30 +14,34 @@ struct AdminView: View {
             LoadableView(state: users, retry: load) { list in
                 List {
                     Group {
-                        Section("Users") {
-                            ForEach(list) { u in
-                                Button { editUser = u } label: {
-                                    HStack {
-                                        IconTile(symbol: u.superuser ? "crown.fill" : "person.fill",
-                                                 color: u.superuser ? Theme.warning : Theme.accent, size: 32)
-                                        VStack(alignment: .leading) {
-                                            Text(u.username).foregroundStyle(u.enabled ? .primary : Theme.secondaryText)
-                                            Text(roleNames(u)).font(.caption).foregroundStyle(Theme.secondaryText)
+                        if app.canManageUsers {
+                            Section("Users") {
+                                ForEach(list) { u in
+                                    Button { editUser = u } label: {
+                                        HStack {
+                                            IconTile(symbol: u.superuser ? "crown.fill" : "person.fill",
+                                                     color: u.superuser ? Theme.warning : Theme.accent, size: 32)
+                                            VStack(alignment: .leading) {
+                                                Text(u.username).foregroundStyle(u.enabled ? .primary : Theme.secondaryText)
+                                                Text(roleNames(u)).font(.caption).foregroundStyle(Theme.secondaryText)
+                                            }
+                                            Spacer()
+                                            if !u.enabled { Text("DISABLED").font(.mono(.caption2, weight: .semibold)).foregroundStyle(Theme.warning) }
                                         }
-                                        Spacer()
-                                        if !u.enabled { Text("DISABLED").font(.mono(.caption2, weight: .semibold)).foregroundStyle(Theme.warning) }
                                     }
                                 }
                             }
                         }
-                        Section("Roles") {
-                            ForEach(roles) { r in
-                                Button { editRole = r } label: {
-                                    HStack {
-                                        Text(r.roleName).foregroundStyle(.primary)
-                                        Spacer()
-                                        if r.mfaRequired { Image(systemName: "lock.shield").foregroundStyle(Theme.secondaryText) }
-                                        Text("\(r.servers.count) servers").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                        if app.canManageRoles {
+                            Section("Roles") {
+                                ForEach(roles) { r in
+                                    Button { editRole = r } label: {
+                                        HStack {
+                                            Text(r.roleName).foregroundStyle(.primary)
+                                            Spacer()
+                                            if r.mfaRequired { Image(systemName: "lock.shield").foregroundStyle(Theme.secondaryText) }
+                                            Text("\(r.servers.count) servers").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                                        }
                                     }
                                 }
                             }
@@ -51,15 +55,21 @@ struct AdminView: View {
             }
             .navigationTitle("Admin")
             .toolbar {
-                Menu {
-                    Button("New User") {
-                        editUser = CraftyUser(userID: 0, username: "", enabled: true, superuser: false, lang: "en_EN", roleIDs: [])
-                    }
-                    Button("New Role") {
-                        editRole = Role(roleID: 0, roleName: "", manager: nil, mfaRequired: false, servers: [])
-                    }
-                } label: { Image(systemName: "plus") }
-                .accessibilityLabel("Add user or role")
+                if app.canAddUsers || app.canAddRoles {
+                    Menu {
+                        if app.canAddUsers {
+                            Button("New User") {
+                                editUser = CraftyUser(userID: 0, username: "", enabled: true, superuser: false, lang: "en_EN", roleIDs: [])
+                            }
+                        }
+                        if app.canAddRoles {
+                            Button("New Role") {
+                                editRole = Role(roleID: 0, roleName: "", manager: nil, mfaRequired: false, servers: [])
+                            }
+                        }
+                    } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Add user or role")
+                }
             }
             .sheet(item: $editUser) { u in
                 UserEditor(user: u, roles: roles) { saved, pw in
@@ -71,7 +81,8 @@ struct AdminView: View {
                     Task { try? await app.service.saveRole(saved); await load() }
                 }
             }
-            .task { await load() }
+            // Reload once the rights are known: a user without ROLES_CONFIG must not request roles.
+            .task(id: app.access) { await load() }
         }
     }
 
@@ -83,9 +94,10 @@ struct AdminView: View {
 
     private func load() async {
         let service = app.service
+        let (loadUsers, loadRoles) = (app.canManageUsers, app.canManageRoles)
         do {
-            async let u = service.users()
-            async let r = service.roles()
+            async let u = loadUsers ? service.users() : []
+            async let r = loadRoles ? service.roles() : []
             async let s = service.servers()
             users = .loaded(try await u)
             roles = try await r

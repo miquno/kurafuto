@@ -150,6 +150,12 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     }
 
     // MARK: Users & roles ✅
+    func panelAccess() async throws -> PanelAccess {
+        struct Me: Decodable { let superuser: Bool }
+        async let me: Me = client.request(.get, "/api/v2/users/@me")
+        async let permissions: CraftyPermissions = client.request(.get, "/api/v2/users/@me/permissions")
+        return try await PanelAccess(isSuperuser: me.superuser, permissions: permissions)
+    }
     func users() async throws -> [CraftyUser] { try await client.request(.get, "/api/v2/users") }
     func saveUser(_ user: CraftyUser, password: String?) async throws {
         if user.userID == 0 {

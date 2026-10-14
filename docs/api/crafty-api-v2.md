@@ -24,6 +24,7 @@ against local test panels **4.7.0** and **4.11.0** (official Docker images, Pape
 | create/update/deleteSchedule | `POST …/tasks`, `PATCH/DELETE …/tasks/{taskID}` | ✅ | – |
 | webhooks | `GET /api/v2/servers/{id}/webhook` | ✅ | – |
 | saveWebhook | `POST /api/v2/servers/{id}/webhook` · `PATCH /api/v2/server/{id}/webhook/{wid}` | ✅ (note singular "server") | – |
+| panelAccess | `GET /api/v2/users/@me` (superuser) + `GET /api/v2/users/@me/permissions` | ✅ | ✅ superuser, no rights, mask `101` |
 | users / saveUser / deleteUser | `/api/v2/users`, `/api/v2/users/{id}` | ✅ | – |
 | roles / saveRole / deleteRole | `/api/v2/roles`, `/api/v2/roles/{id}` | ✅ | – |
 | hostStats | `GET /metrics/host` (OpenMetrics text) | ✅ | – |
@@ -44,8 +45,11 @@ Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.
 - **EULA:** a new Java server only starts after `POST …/action/eula`. The app does not offer this yet; servers created in the app must be accepted in the web panel first.
 - **Backup:** `action/backup_server` without an id uses the default backup config on 4.11.0. On 4.7.0 it answers `ok` but the backup fails inside the panel (`BackupsDoesNotExist`); it needs `action/backup_server/{backup_id}`. To be fixed together with the backups item in 0.3.
 
-More useful endpoints for later: `/api/v2/users/{id}/permissions` (hide UI based on permissions),
-`/api/v2/servers/{id}/users`, `/metrics/servers/{id}`, `/api/v2/crafty/config` (panel settings, superuser).
+- **Panel permissions:** `permissions` is a bit string in `EnumPermissionsCrafty` order – server creation, user config, roles config. Superusers get `"000"`, so check `superuser` from `/users/@me` first. Adding is allowed when the bit is set and the counter is below the limit, or the limit is `-1`; a limit of `0` blocks adding (`can_add_in_crafty`). Per-server rights of the signed-in user are not exposed; the panel enforces them per request.
+- **Missing panel rights** answer **400** `NOT_AUTHORIZED` (e.g. `GET /roles` without ROLES_CONFIG), not 403.
+- **Fresh tokens:** a token issued in the same second as the user's creation or a permission change is rejected as invalid; log in again a moment later.
+
+More useful endpoints for later: `/api/v2/servers/{id}/users`, `/metrics/servers/{id}`, `/api/v2/crafty/config` (panel settings, superuser).
 
 **Security:** never render MOTDs/logs as HTML (stored XSS in the web panel, issue #647). Never pass user-supplied
 paths through unchecked (path traversal issue #660 affected files/copy|move in 4.7.0).
