@@ -152,6 +152,10 @@ private struct ThemedBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scrollContentBackground(.hidden)
+            // List cells keep the separator tint they were created with, so a mode switch
+            // would leave dark separators on light rows. A new identity rebuilds the cells;
+            // screen state is unaffected because it lives outside the list.
+            .id(Appearance.shared.mode)
             .background(Theme.background.ignoresSafeArea())
     }
 }
