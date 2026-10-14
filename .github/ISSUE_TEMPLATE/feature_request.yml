@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something Kurafuto should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Kurafuto to do?
+    validations:
+      required: true
+  - type: textarea
+    id: panel
+    attributes:
+      label: How does the Crafty web panel handle this today?
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This feature works without sending data to anyone other than my own panel.

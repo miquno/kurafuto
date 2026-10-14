@@ -1,0 +1,167 @@
+import Foundation
+
+/// Realistic sample data – modeled after the examples in the Crafty OpenAPI spec.
+enum MockData {
+    static let survivalID = "5adcec83-684c-4555-a7e9-9d913203d07e"
+    static let creativeID = "f53b7b9d-48cc-40f1-89ce-331bda9458ba"
+    static let bedrockID = "54d4cbb0-2a2b-4529-9e72-4682ebcb9330"
+    static let modpackID = "ef3fb2d1-a94c-4d9b-8c65-c4274be706cb"
+
+    static func server(_ id: String, _ name: String, _ jar: String, port: Int, type: ServerType = .minecraftJava) -> Server {
+        Server(serverID: id, serverName: name, created: "2025-05-18T22:36:04",
+               path: "/crafty/servers/\(id)", backupPath: "/crafty/backups/\(id)",
+               executable: jar, logPath: "/crafty/servers/\(id)/logs/latest.log",
+               executionCommand: "java -Xms2G -Xmx4G -jar \(jar) nogui",
+               autoStart: true, autoStartDelay: 10, crashDetection: true, stopCommand: "stop",
+               executableUpdateURL: nil, serverIP: "127.0.0.1", serverPort: port,
+               logsDeleteAfter: 7, type: type)
+    }
+
+    static let servers: [Server] = [
+        server(survivalID, "Survival SMP", "paper-1.21.4.jar", port: 25565),
+        server(creativeID, "Creative World", "purpur-1.21.4.jar", port: 25566),
+        server(bedrockID, "Bedrock Friends", "bedrock_server", port: 19132, type: .minecraftBedrock),
+        server(modpackID, "ATM10 Modpack", "neoforge-21.1.jar", port: 25567),
+    ]
+
+    static let stats: [String: ServerStats] = [
+        survivalID: ServerStats(running: true, started: "2026-10-14 08:12:03", cpu: 23.4, mem: "3.1GB", memPercent: 38,
+                                worldName: "world", worldSize: "2.4GB", serverPort: 25565, online: 4, max: 20,
+                                players: ["Steve_DE", "miquno", "Alex2010", "MasterBuilder"],
+                                desc: "§aWelcome to the SMP!", version: "Paper 1.21.4"),
+        creativeID: ServerStats(running: false, cpu: 0, mem: "0MB", memPercent: 0, worldName: "creative",
+                                worldSize: "512MB", serverPort: 25566, online: 0, max: 10, players: [],
+                                desc: "Creative", version: "Purpur 1.21.4"),
+        bedrockID: ServerStats(running: true, started: "2026-10-13 19:44:51", cpu: 6.2, mem: "640MB", memPercent: 8,
+                               worldName: "Bedrock level", worldSize: "180MB", serverPort: 19132, online: 1, max: 10,
+                               players: ["PocketHero"], version: "1.21.40"),
+        modpackID: ServerStats(running: false, cpu: 0, mem: "0MB", memPercent: 0, worldName: "world", worldSize: "6.8GB",
+                               serverPort: 25567, online: 0, max: 8, players: [], version: "NeoForge 1.21.1", crashed: true),
+    ]
+
+    static let consoleLines: [String] = [
+        "[08:12:03 INFO]: Starting minecraft server version 1.21.4",
+        "[08:12:03 INFO]: Loading properties",
+        "[08:12:04 INFO]: Default game type: SURVIVAL",
+        "[08:12:09 INFO]: Preparing level \"world\"",
+        "[08:12:15 INFO]: Done (11.832s)! For help, type \"help\"",
+        "[08:20:41 INFO]: Steve_DE joined the game",
+        "[08:21:02 INFO]: <Steve_DE> hey everyone",
+        "[08:25:17 WARN]: Can't keep up! Is the server overloaded? Running 2140ms behind",
+        "[08:31:55 INFO]: miquno joined the game",
+        "[08:32:10 INFO]: <miquno> who set my house on fire 😅",
+    ]
+
+    static let randomLines: [String] = [
+        "[INFO]: Saving the game (this may take a moment!)",
+        "[INFO]: Saved the game",
+        "[INFO]: <Alex2010> anyone got diamonds?",
+        "[INFO]: MasterBuilder has made the advancement [Stone Age]",
+        "[WARN]: Steve_DE moved too quickly! 12.4,0.0,3.1",
+    ]
+
+    static let schedules: [Schedule] = [
+        Schedule(id: 1, name: "Nightly restart", enabled: true, action: .restart, interval: 1, intervalType: .days,
+                 command: nil, parent: nil, oneTime: false, cronString: "0 4 * * *", delay: 0,
+                 nextRun: .now.addingTimeInterval(9 * 3600)),
+        Schedule(id: 2, name: "Backup every 6h", enabled: true, action: .backup, interval: 6, intervalType: .hours,
+                 command: nil, parent: nil, oneTime: false, cronString: nil, delay: 0,
+                 nextRun: .now.addingTimeInterval(95 * 60)),
+        Schedule(id: 3, name: "Restart warning", enabled: true, action: .customCommand, interval: 1, intervalType: .days,
+                 command: "say Restarting in 5 minutes!", parent: 1, oneTime: false, cronString: nil, delay: -300, nextRun: nil),
+        Schedule(id: 4, name: "Weekend event", enabled: false, action: .customCommand, interval: 1, intervalType: .saturday,
+                 command: "say Double XP is active!", parent: nil, oneTime: false, cronString: nil, delay: 0, nextRun: nil),
+    ]
+
+    static let backupConfigs: [BackupConfig] = [
+        BackupConfig(id: "default", name: "Default", maxBackups: 10, compress: true, shutdown: false,
+                     beforeCommand: "save-off", afterCommand: "save-on", excludedPaths: ["logs", "cache"],
+                     backupLocation: "/crafty/backups/\(survivalID)"),
+        BackupConfig(id: "nas", name: "NAS copy", maxBackups: 30, compress: true, shutdown: true,
+                     beforeCommand: nil, afterCommand: nil, excludedPaths: [],
+                     backupLocation: "/mnt/nas/minecraft"),
+    ]
+
+    static var backupFiles: [BackupFile] {
+        (0..<6).map { i in
+            let d = Date.now.addingTimeInterval(Double(-6 * i) * 3600)
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+            return BackupFile(path: "/crafty/backups/\(survivalID)/\(f.string(from: d)).zip",
+                              size: Int64(2_400_000_000 - i * 12_000_000), created: d)
+        }
+    }
+
+    static let rootFiles: [FileEntry] = [
+        FileEntry(name: "world", path: "world", isDirectory: true),
+        FileEntry(name: "world_nether", path: "world_nether", isDirectory: true),
+        FileEntry(name: "plugins", path: "plugins", isDirectory: true),
+        FileEntry(name: "logs", path: "logs", isDirectory: true),
+        FileEntry(name: "server.properties", path: "server.properties", isDirectory: false, size: 1_420, modified: .now),
+        FileEntry(name: "ops.json", path: "ops.json", isDirectory: false, size: 210, modified: .now),
+        FileEntry(name: "whitelist.json", path: "whitelist.json", isDirectory: false, size: 340, modified: .now),
+        FileEntry(name: "eula.txt", path: "eula.txt", isDirectory: false, size: 158, modified: .now),
+        FileEntry(name: "paper-1.21.4.jar", path: "paper-1.21.4.jar", isDirectory: false, size: 51_200_000, modified: .now),
+    ]
+
+    static let pluginFiles: [FileEntry] = [
+        FileEntry(name: "EssentialsX.jar", path: "plugins/EssentialsX.jar", isDirectory: false, size: 3_100_000),
+        FileEntry(name: "LuckPerms.jar", path: "plugins/LuckPerms.jar", isDirectory: false, size: 2_200_000),
+        FileEntry(name: "Essentials", path: "plugins/Essentials", isDirectory: true),
+    ]
+
+    static let serverProperties = """
+    #Minecraft server properties
+    motd=\\u00A7aWelcome to the SMP!
+    difficulty=normal
+    gamemode=survival
+    max-players=20
+    online-mode=true
+    pvp=true
+    server-port=25565
+    spawn-protection=16
+    view-distance=10
+    simulation-distance=8
+    white-list=true
+    enable-command-block=false
+    """
+
+    static let webhooks: [Webhook] = [
+        Webhook(id: 1, webhookType: .discord, name: "Discord #server-status", url: "https://discord.com/api/webhooks/…",
+                botName: "Server Bot", triggers: [.serverStart, .serverStop, .serverCrash],
+                body: "Server {server_name} triggered {event_type}", enabled: true),
+        Webhook(id: 2, webhookType: .discord, name: "Backup log", url: "https://discord.com/api/webhooks/…",
+                botName: "Backup", triggers: [.backupServer], body: "Backup finished", enabled: false),
+    ]
+
+    static let users: [CraftyUser] = [
+        CraftyUser(userID: 1, username: "admin", enabled: true, superuser: true, lang: "en_EN",
+                   created: "05/18/2025", lastLogin: "2026-10-14T08:10:00", lastIP: "192.168.1.42", roleIDs: []),
+        CraftyUser(userID: 2, username: "steve", enabled: true, superuser: false, lang: "de_DE",
+                   created: "06/02/2025", lastLogin: "2026-10-12T20:01:00", lastIP: "10.0.0.7", roleIDs: [1]),
+        CraftyUser(userID: 3, username: "alex", enabled: false, superuser: false, lang: "en_EN",
+                   created: "07/21/2025", lastLogin: nil, lastIP: nil, roleIDs: [2]),
+    ]
+
+    static let roles: [Role] = [
+        Role(roleID: 1, roleName: "Moderator", manager: 1, mfaRequired: true, servers: [
+            RoleServerPermission(serverID: survivalID, permissions: "11100001"),
+            RoleServerPermission(serverID: creativeID, permissions: "11100001"),
+        ]),
+        Role(roleID: 2, roleName: "View only", manager: 1, mfaRequired: false, servers: [
+            RoleServerPermission(serverID: survivalID, permissions: "00100000"),
+        ]),
+    ]
+
+    static let announcements: [Announcement] = [
+        Announcement(id: "dbc0c2aa-690a-46c3-aa67-db8e3bde0cd0", date: "2026/10/01",
+                     title: "New panel version available", desc: "An update for your panel has been released.", link: nil),
+    ]
+
+    static let host = HostStats(cpuPercent: 31.5, memPercent: 63.8,
+                                diskUsage: [DiskUsage(mount: "/", usedGB: 182, totalGB: 476),
+                                            DiskUsage(mount: "/mnt/nas", usedGB: 1_840, totalGB: 3_600)],
+                                craftyVersion: "4.7.2")
+
+    static let instance = Instance(name: "Homelab", baseURL: URL(string: "https://192.168.1.20:8443") ?? URL(filePath: "/"),
+                                   username: "admin", authMethod: .password)
+}

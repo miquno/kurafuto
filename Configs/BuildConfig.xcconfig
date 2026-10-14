@@ -1,0 +1,4 @@
+// Shared build settings entry point.
+// Personal values (team ID) live in BuildConfig.local.xcconfig, which is gitignored.
+// Copy BuildConfig.local.example.xcconfig (repo root) to BuildConfig.local.xcconfig to set them.
+#include? "../BuildConfig.local.xcconfig"

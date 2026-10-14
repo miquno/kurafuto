@@ -1,0 +1,15 @@
+# Security-relevant paths: CI, scripts, build configuration, privacy and
+# security policy, networking and secret storage. Code-owner review becomes
+# required once there is a second maintainer; see .github/AGENTS.md.
+/.github/ @miquno
+/scripts/ @miquno
+/project.yml @miquno
+/Configs/ @miquno
+/Kurafuto/Resources/PrivacyInfo.xcprivacy @miquno
+/Kurafuto/Core/Networking/ @miquno
+/Kurafuto/Core/Storage/ @miquno
+/PRIVACY.md @miquno
+/site/ @miquno
+/SECURITY.md @miquno
+/docs/security/ @miquno
+/docs/decisions/ @miquno

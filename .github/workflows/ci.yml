@@ -1,0 +1,52 @@
+name: CI
+
+# Required pull request gate. Builds the app and runs the unit tests on an
+# iOS simulator. The job name `build-and-test` is a required status check.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      DESTINATION: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE_PATH"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Kurafuto.xcodeproj \
+            -scheme Kurafuto \
+            -destination "$DESTINATION" \
+            -only-testing:KurafutoTests \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet

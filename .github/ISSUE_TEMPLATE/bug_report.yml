@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in Kurafuto does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security vulnerabilities must not be reported here.** See SECURITY.md.
+        Please do not include panel addresses, IP addresses, usernames, tokens, passwords or unredacted logs.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Tap …
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Kurafuto version
+      placeholder: 0.1.0 (1)
+  - type: input
+    id: environment
+    attributes:
+      label: iOS version and device
+      placeholder: iOS 26.0, iPhone 15
+  - type: input
+    id: panel-version
+    attributes:
+      label: Crafty Controller version
+      placeholder: 4.7.2
+  - type: dropdown
+    id: demo
+    attributes:
+      label: Does it also happen in demo mode?
+      options:
+        - 'Not tested'
+        - 'Yes'
+        - 'No'

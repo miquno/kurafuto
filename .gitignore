@@ -1,0 +1,51 @@
+# Generated Xcode project (source of truth is project.yml)
+Kurafuto.xcodeproj/
+Kurafuto/Resources/Info.plist
+
+# Xcode - user data
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Xcode - build artifacts
+DerivedData/
+build/
+TestResults/
+*.xcresult
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcarchive
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Code signing and secrets (never commit)
+*.mobileprovision
+*.provisionprofile
+*.p12
+*.pem
+*.key
+*.cer
+BuildConfig.local.xcconfig
+Secrets/
+.env
+.env.*
+
+# Temporary agent and investigation artifacts. Only the README is tracked.
+/scratch/*
+!/scratch/README.md
+
+# Agents
+.claude/*
+
+# Editors and OS
+.DS_Store
+.AppleDouble
+._*
+*.swp
+*~
+.idea/
+.vscode/

@@ -1,0 +1,140 @@
+import SwiftUI
+
+/// File manager: browse folders, edit text files, create folders, delete.
+/// Uploads (plugins/mods/worlds) later via `.fileImporter` + the panel's chunked upload.
+struct FileBrowserView: View {
+    @Environment(AppState.self) private var app
+    let server: Server
+    let path: String
+    @State private var state: Loadable<[FileEntry]> = .idle
+    @State private var newFolder = ""
+    @State private var showNewFolder = false
+    @State private var showImporter = false
+
+    var body: some View {
+        LoadableView(state: state, retry: load) { entries in
+            List(entries.sorted { ($0.isDirectory ? 0 : 1, $0.name) < ($1.isDirectory ? 0 : 1, $1.name) }) { e in
+                if e.isDirectory {
+                    NavigationLink { FileBrowserView(server: server, path: e.path) } label: { row(e) }
+                } else if e.isEditableText {
+                    NavigationLink { TextFileEditor(server: server, path: e.path) } label: { row(e) }
+                } else {
+                    row(e)
+                }
+            }
+            .overlay { if entries.isEmpty { ContentUnavailableView("Empty Folder", systemImage: "folder") } }
+        }
+        .navigationTitle(path.isEmpty ? "Files" : (path as NSString).lastPathComponent)
+        .toolbar {
+            Menu {
+                Button { showNewFolder = true } label: { Label("New Folder", systemImage: "folder.badge.plus") }
+                Button { showImporter = true } label: { Label("Upload", systemImage: "square.and.arrow.up") }
+            } label: { Image(systemName: "plus") }
+        }
+        .alert("New Folder", isPresented: $showNewFolder) {
+            TextField("Name", text: $newFolder)
+            Button("Create") {
+                Task { try? await app.service.createFolder(serverID: server.id, path: path + "/" + newFolder); await load() }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.data]) { _ in
+            // TODO: wire up the panel's upload endpoint
+        }
+        .task { await load() }
+    }
+
+    private func row(_ e: FileEntry) -> some View {
+        HStack {
+            Image(systemName: e.isDirectory ? "folder.fill" : e.isEditableText ? "doc.text" : "doc")
+                .foregroundStyle(e.isDirectory ? Theme.accent : .secondary).frame(width: 26)
+            Text(e.name)
+            Spacer()
+            if let s = e.size { Text(s.byteString).font(.caption).foregroundStyle(.secondary) }
+        }
+        .swipeActions {
+            Button(role: .destructive) {
+                Task { try? await app.service.deleteFile(serverID: server.id, path: e.path); await load() }
+            } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    private func load() async {
+        do { state = .loaded(try await app.service.listFiles(serverID: server.id, path: path)) }
+        catch { state = .failed(error) }
+    }
+}
+
+struct TextFileEditor: View {
+    @Environment(AppState.self) private var app
+    let server: Server
+    let path: String
+    @State private var text = ""
+    @State private var original = ""
+    @State private var saving = false
+
+    var body: some View {
+        TextEditor(text: $text)
+            .font(.system(.footnote, design: .monospaced))
+            .autocorrectionDisabled().textInputAutocapitalization(.never)
+            .navigationTitle((path as NSString).lastPathComponent)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                Button(saving ? "…" : "Save") {
+                    Task {
+                        saving = true
+                        try? await app.service.writeFile(serverID: server.id, path: path, content: text)
+                        original = text; saving = false
+                    }
+                }.disabled(text == original)
+            }
+            .task {
+                text = (try? await app.service.readFile(serverID: server.id, path: path)) ?? ""
+                original = text
+            }
+    }
+}
+
+/// Convenience editor for server.properties with toggles instead of raw text.
+struct PropertiesEditorView: View {
+    @Environment(AppState.self) private var app
+    let server: Server
+    @State private var props: [(key: String, value: String)] = []
+    @State private var dirty = false
+
+    var body: some View {
+        Form {
+            ForEach(props.indices, id: \.self) { i in
+                let key = props[i].key
+                if props[i].value == "true" || props[i].value == "false" {
+                    Toggle(key, isOn: Binding(get: { props[i].value == "true" },
+                                              set: { props[i].value = $0 ? "true" : "false"; dirty = true }))
+                } else {
+                    LabeledContent(key) {
+                        TextField(key, text: Binding(get: { props[i].value }, set: { props[i].value = $0; dirty = true }))
+                            .multilineTextAlignment(.trailing).monospaced()
+                    }
+                }
+            }
+            Section { Text("Changes take effect after a restart.").font(.footnote).foregroundStyle(.secondary) }
+        }
+        .navigationTitle("server.properties")
+        .toolbar {
+            Button("Save") {
+                Task {
+                    let out = "#Edited with Kurafuto\n" + props.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+                    try? await app.service.writeFile(serverID: server.id, path: "server.properties", content: out)
+                    dirty = false
+                }
+            }.disabled(!dirty)
+        }
+        .task {
+            let raw = (try? await app.service.readFile(serverID: server.id, path: "server.properties")) ?? ""
+            props = raw.split(separator: "\n").compactMap { line in
+                let l = line.trimmingCharacters(in: .whitespaces)
+                guard !l.hasPrefix("#"), let eq = l.firstIndex(of: "=") else { return nil }
+                return (String(l[..<eq]), String(l[l.index(after: eq)...]))
+            }
+        }
+    }
+}

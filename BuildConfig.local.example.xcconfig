@@ -1,0 +1,6 @@
+// Copy this file to BuildConfig.local.xcconfig (gitignored) and fill in your own values.
+// Never commit the copy.
+
+// Your Apple Developer team. Not required for running in the simulator or on a
+// personal team with automatic signing, but an archive needs it.
+// DEVELOPMENT_TEAM = YOURTEAMID
