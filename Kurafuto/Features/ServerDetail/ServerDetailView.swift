@@ -10,6 +10,8 @@ struct ServerDetailView: View {
     @State private var history: [StatPoint] = []
     @State private var busyAction: ServerAction?
     @State private var confirm: ConfirmAction?
+    /// Start, restart and stop symbols differ in height; a shared box keeps the three buttons level.
+    @ScaledMetric(relativeTo: .title3) private var actionIconHeight: CGFloat = 26
 
     var body: some View {
         ScrollView {
@@ -85,7 +87,10 @@ struct ServerDetailView: View {
             } else { Task { await run(a) } }
         } label: {
             VStack(spacing: 4) {
-                if busyAction == a { ProgressView().tint(color) } else { Image(systemName: a.symbol).font(.title3) }
+                Group {
+                    if busyAction == a { ProgressView().tint(color) } else { Image(systemName: a.symbol).font(.title3) }
+                }
+                .frame(height: actionIconHeight)
                 Text(a.label).font(.caption.weight(.semibold))
             }
             .padding(.vertical, 8)
