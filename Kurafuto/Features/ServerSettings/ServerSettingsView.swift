@@ -11,36 +11,41 @@ struct ServerSettingsView: View {
 
     var body: some View {
         Form {
-            if let binding = Binding($draft) {
-                Section("General") {
-                    TextField("Name", text: binding.serverName)
-                    LabeledContent("Type", value: server.type.label)
-                    LabeledContent("Server ID") { Text(server.id).font(.caption2).monospaced().textSelection(.enabled) }
-                }
-                Section("Startup") {
-                    TextField("Start command", text: Binding(binding.executionCommand, replacingNilWith: ""), axis: .vertical)
-                        .monospaced().font(.footnote)
-                    TextField("Stop command", text: binding.stopCommand).monospaced()
-                    Toggle("Start automatically with panel", isOn: binding.autoStart)
-                    Stepper("Start delay: \(binding.wrappedValue.autoStartDelay) s",
-                            value: binding.autoStartDelay, in: 0...600, step: 5)
-                    Toggle("Detect crashes & restart", isOn: binding.crashDetection)
-                }
-                Section("Network") {
-                    TextField("IP", text: binding.serverIP).monospaced()
-                    TextField("Port", value: binding.serverPort, format: .number.grouping(.never)).keyboardType(.numberPad)
-                }
-                Section("Logs") {
-                    Stepper("Delete logs after \(binding.wrappedValue.logsDeleteAfter) days (0 = never)",
-                            value: binding.logsDeleteAfter, in: 0...365)
-                }
-                Section {
-                    Button("Delete Server", role: .destructive) { confirmDelete = true }
-                } footer: {
-                    Text("Permanently deletes the server, its files and schedules.")
+            Group {
+                if let binding = Binding($draft) {
+                    Section("General") {
+                        TextField("Name", text: binding.serverName)
+                        LabeledContent("Type", value: server.type.label)
+                        LabeledContent("Server ID") { Text(server.id).font(.mono(.caption2)).textSelection(.enabled) }
+                    }
+                    Section("Startup") {
+                        TextField("Start command", text: Binding(binding.executionCommand, replacingNilWith: ""), axis: .vertical)
+                            .monospaced().font(.footnote)
+                        TextField("Stop command", text: binding.stopCommand).monospaced()
+                        Toggle("Start automatically with panel", isOn: binding.autoStart)
+                        Stepper("Start delay: \(binding.wrappedValue.autoStartDelay) s",
+                                value: binding.autoStartDelay, in: 0...600, step: 5)
+                        Toggle("Detect crashes & restart", isOn: binding.crashDetection)
+                    }
+                    Section("Network") {
+                        TextField("IP", text: binding.serverIP).monospaced()
+                        TextField("Port", value: binding.serverPort, format: .number.grouping(.never)).keyboardType(.numberPad)
+                    }
+                    Section("Logs") {
+                        Stepper("Delete logs after \(binding.wrappedValue.logsDeleteAfter) days (0 = never)",
+                                value: binding.logsDeleteAfter, in: 0...365)
+                    }
+                    Section {
+                        Button("Delete Server", role: .destructive) { confirmDelete = true }
+                    } footer: {
+                        Text("Permanently deletes the server, its files and schedules.")
+                    }
                 }
             }
+            .themedRows()
         }
+        .themedBackground()
+        .entrance()
         .navigationTitle("Configuration")
         .toolbar {
             Button("Save") {

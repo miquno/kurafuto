@@ -19,55 +19,70 @@ struct OnboardingView: View {
         NavigationStack {
             Form {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Image(systemName: "cube.transparent.fill")
-                            .font(.system(size: 44)).foregroundStyle(Theme.accent)
+                    VStack(alignment: .leading, spacing: 12) {
+                        IconTile(symbol: "cube.transparent.fill", size: 64)
+                            .shadow(color: Theme.accent.opacity(0.35), radius: 18)
+                            .entrance(0)
                         Text("Your servers. In your pocket.").font(.title2.bold())
+                            .entrance(1)
                         Text("Connect to your self-hosted Crafty Controller panel (version 4.x).")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(Theme.secondaryText)
+                            .entrance(2)
                     }
                     .padding(.vertical, 8)
                 }
+                .listRowBackground(Color.clear)
 
-                Section("Panel") {
-                    TextField("Name", text: $name)
-                    TextField("Address, e.g. https://192.168.1.20:8443", text: $address)
-                        .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Group {
+                    Section("Panel") {
+                        TextField("Name", text: $name)
+                        TextField("Address, e.g. https://192.168.1.20:8443", text: $address)
+                            .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    }
+
+                    Section {
+                        Picker("Sign-in method", selection: $useToken) {
+                            Text("Account").tag(false)
+                            Text("API Token").tag(true)
+                        }.pickerStyle(.segmented)
+
+                        if useToken {
+                            SecureField("API token from Panel → Users → API Keys", text: $apiToken)
+                        } else {
+                            TextField("Username", text: $username)
+                                .textContentType(.username).textInputAutocapitalization(.never)
+                            SecureField("Password", text: $password).textContentType(.password)
+                            TextField("2FA code (if enabled)", text: $totp)
+                                .keyboardType(.numberPad).textContentType(.oneTimeCode)
+                        }
+                    } footer: {
+                        Text("Credentials are stored only on this device in the Keychain and are sent exclusively to your panel.")
+                    }
+
+                    if let error {
+                        Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.danger) }
+                    }
                 }
+                .themedRows()
+                .entrance(3)
 
                 Section {
-                    Picker("Sign-in method", selection: $useToken) {
-                        Text("Account").tag(false)
-                        Text("API Token").tag(true)
-                    }.pickerStyle(.segmented)
+                    VStack(spacing: 10) {
+                        Button { Task { await connect() } } label: {
+                            if busy { ProgressView().tint(Theme.onAccent) } else { Text("Connect") }
+                        }
+                        .buttonStyle(InstrumentButtonStyle())
+                        .disabled(busy || URL(string: address)?.host == nil)
 
-                    if useToken {
-                        SecureField("API token from Panel → Users → API Keys", text: $apiToken)
-                    } else {
-                        TextField("Username", text: $username)
-                            .textContentType(.username).textInputAutocapitalization(.never)
-                        SecureField("Password", text: $password).textContentType(.password)
-                        TextField("2FA code (if enabled)", text: $totp)
-                            .keyboardType(.numberPad).textContentType(.oneTimeCode)
+                        Button("Try the Demo with Sample Data") { app.startDemo() }
+                            .buttonStyle(InstrumentButtonStyle(kind: .outline))
                     }
-                } footer: {
-                    Text("Credentials are stored only on this device in the Keychain and are sent exclusively to your panel.")
                 }
-
-                if let error {
-                    Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red) }
-                }
-
-                Section {
-                    Button { Task { await connect() } } label: {
-                        HStack { Spacer(); if busy { ProgressView() } else { Text("Connect").bold() }; Spacer() }
-                    }
-                    .disabled(busy || URL(string: address)?.host == nil)
-
-                    Button("Try the Demo with Sample Data") { app.startDemo() }
-                        .frame(maxWidth: .infinity)
-                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+                .entrance(4)
             }
+            .themedBackground()
             .navigationTitle("Welcome")
             .alert("Self-Signed Certificate", isPresented: .constant(certToTrust != nil)) {
                 Button("Trust") { Task { await connect(trusting: certToTrust) } }

@@ -8,46 +8,89 @@ struct PanelOverviewView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if let h = host {
-                    Section("Host") {
-                        HStack(spacing: 10) {
-                            MetricCard(title: "CPU", value: h.cpuPercent, caption: String(format: "%.0f%%", h.cpuPercent))
-                            MetricCard(title: "RAM", value: h.memPercent, caption: String(format: "%.0f%%", h.memPercent))
-                        }
-                        .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                        ForEach(h.diskUsage) { d in
-                            VStack(alignment: .leading) {
-                                HStack { Text(d.mount).monospaced(); Spacer()
-                                    Text("\(Int(d.usedGB)) / \(Int(d.totalGB)) GB").font(.caption).foregroundStyle(.secondary) }
-                                ProgressView(value: d.usedGB, total: d.totalGB)
-                            }
-                        }
-                        LabeledContent("Panel version", value: h.craftyVersion)
+            ScrollView {
+                VStack(spacing: 16) {
+                    if let h = host {
+                        hostSection(h).entrance(0)
+                    } else {
+                        ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, minHeight: 160)
                     }
-                } else {
-                    ProgressView()
+                    announcements.entrance(2)
                 }
-
-                Section("Announcements") {
-                    if news.isEmpty { Text("No new announcements").foregroundStyle(.secondary) }
-                    ForEach(news) { n in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(n.title).font(.headline)
-                            Text(n.desc).font(.subheadline).foregroundStyle(.secondary)
-                            Text(n.date).font(.caption2).foregroundStyle(.tertiary)
-                        }
-                        .swipeActions {
-                            Button("Dismiss") {
-                                Task { try? await app.service.clearAnnouncement(id: n.id); news.removeAll { $0.id == n.id } }
-                            }.tint(Theme.accent)
-                        }
-                    }
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
+            .themedBackground()
             .navigationTitle("Panel")
             .refreshable { await load() }
             .task { await load() }
+        }
+    }
+
+    private func hostSection(_ h: HostStats) -> some View {
+        VStack(spacing: 10) {
+            SectionLabel("Host")
+            HStack(spacing: 10) {
+                GaugeTile(title: "CPU", value: h.cpuPercent, color: Theme.cpu, delay: 0.2)
+                GaugeTile(title: "RAM", value: h.memPercent, color: Theme.ram, delay: 0.3)
+                ValueTile(title: "Panel", value: h.craftyVersion)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
+            if !h.diskUsage.isEmpty {
+                VStack(spacing: 14) {
+                    ForEach(h.diskUsage) { d in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Label(d.mount, systemImage: "internaldrive").font(.mono(.footnote, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Text("\(Int(d.usedGB)) / \(Int(d.totalGB)) GB")
+                                    .font(.mono(.caption)).foregroundStyle(Theme.secondaryText)
+                            }
+                            MeterBar(value: d.usedGB, total: d.totalGB, color: Theme.storage)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .card()
+                .entrance(1)
+            }
+        }
+    }
+
+    private var announcements: some View {
+        VStack(spacing: 10) {
+            SectionLabel("Announcements")
+            if news.isEmpty {
+                Text("No new announcements")
+                    .foregroundStyle(Theme.secondaryText)
+                    .card()
+            }
+            ForEach(news) { n in
+                HStack(alignment: .top, spacing: 12) {
+                    IconTile(symbol: "megaphone.fill", color: Theme.accent, size: 32)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(n.title).font(.headline)
+                        Text(n.desc).font(.subheadline).foregroundStyle(Theme.secondaryText)
+                        Text(n.date).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer(minLength: 0)
+                    Button {
+                        Task {
+                            try? await app.service.clearAnnouncement(id: n.id)
+                            withAnimation(.snappy) { news.removeAll { $0.id == n.id } }
+                        }
+                    } label: {
+                        Image(systemName: "xmark").font(.caption.weight(.bold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .foregroundStyle(Theme.secondaryText)
+                    .accessibilityLabel("Dismiss \(n.title)")
+                }
+                .card()
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
         }
     }
 
