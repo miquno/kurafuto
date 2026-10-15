@@ -9,6 +9,7 @@ struct BackupsView: View {
     @State private var files: Loadable<[BackupFile]> = .idle
     @State private var confirm: ConfirmAction?
     @State private var running = false
+    @State private var actionError: Error?
 
     var body: some View {
         List {
@@ -37,7 +38,7 @@ struct BackupsView: View {
                     Button {
                         Task {
                             running = true
-                            try? await app.service.send(.backup, serverID: server.id)
+                            await $actionError.capture { try await app.service.send(.backup, serverID: server.id) }
                             running = false
                             await loadFiles()
                         }
@@ -64,19 +65,20 @@ struct BackupsView: View {
                             .swipeActions {
                                 Button(role: .destructive) {
                                     confirm = ConfirmAction(title: "Delete backup?", message: f.fileName, buttonLabel: "Delete") {
-                                        try? await app.service.deleteBackup(f, serverID: server.id); await loadFiles()
+                                        await $actionError.capture { try await app.service.deleteBackup(f, serverID: server.id) }
+                                        await loadFiles()
                                     }
                                 } label: { Label("Delete", systemImage: "trash") }
                                 Button {
                                     confirm = ConfirmAction(title: "Restore backup?",
                                                             message: "The current world will be replaced by \(f.fileName). The server will be stopped for this.",
                                                             buttonLabel: "Restore") {
-                                        try? await app.service.restoreBackup(f, serverID: server.id)
+                                        await $actionError.capture { try await app.service.restoreBackup(f, serverID: server.id) }
                                     }
                                 } label: { Label("Restore", systemImage: "clock.arrow.circlepath") }.tint(Theme.warning)
                             }
                         }
-                    case .failed(let e): Text(e.localizedDescription).foregroundStyle(Theme.danger)
+                    case .failed(let e): Text(e.panelProblem.message(for: e)).foregroundStyle(Theme.danger)
                     default: ProgressView()
                     }
                 }
@@ -87,7 +89,9 @@ struct BackupsView: View {
         .entrance()
         .navigationTitle("Backups")
         .destructiveConfirmation($confirm)
+        .errorAlert($actionError)
         .task {
+            // Without configs the default one is tried; if the panel is unreachable, the archive list shows why.
             configs = (try? await app.service.backupConfigs(serverID: server.id)) ?? []
             selected = configs.first?.id ?? "default"
             await loadFiles()

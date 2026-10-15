@@ -11,6 +11,7 @@ struct FileBrowserView: View {
     @State private var showNewFolder = false
     @State private var showImporter = false
     @State private var confirm: ConfirmAction?
+    @State private var actionError: Error?
 
     var body: some View {
         LoadableView(state: state, retry: load) { entries in
@@ -32,6 +33,7 @@ struct FileBrowserView: View {
         }
         .navigationTitle(path.isEmpty ? "Files" : (path as NSString).lastPathComponent)
         .destructiveConfirmation($confirm)
+        .errorAlert($actionError)
         .toolbar {
             Menu {
                 Button { showNewFolder = true } label: { Label("New Folder", systemImage: "folder.badge.plus") }
@@ -42,7 +44,10 @@ struct FileBrowserView: View {
         .alert("New Folder", isPresented: $showNewFolder) {
             TextField("Name", text: $newFolder)
             Button("Create") {
-                Task { try? await app.service.createFolder(serverID: server.id, path: path + "/" + newFolder); await load() }
+                Task {
+                    await $actionError.capture { try await app.service.createFolder(serverID: server.id, path: path + "/" + newFolder) }
+                    await load()
+                }
             }
             Button("Cancel", role: .cancel) {}
         }
@@ -65,7 +70,7 @@ struct FileBrowserView: View {
                 confirm = ConfirmAction(title: e.isDirectory ? "Delete folder?" : "Delete file?",
                                         message: e.isDirectory ? "\(e.name) and everything in it will be deleted." : e.name,
                                         buttonLabel: "Delete") {
-                    try? await app.service.deleteFile(serverID: server.id, path: e.path)
+                    await $actionError.capture { try await app.service.deleteFile(serverID: server.id, path: e.path) }
                     await load()
                 }
             } label: { Label("Delete", systemImage: "trash") }
@@ -82,31 +87,44 @@ struct TextFileEditor: View {
     @Environment(AppState.self) private var app
     let server: Server
     let path: String
+    @State private var state: Loadable<String> = .idle
     @State private var text = ""
     @State private var original = ""
     @State private var saving = false
+    @State private var actionError: Error?
 
     var body: some View {
-        TextEditor(text: $text)
-            .font(.mono(.footnote))
-            .autocorrectionDisabled().textInputAutocapitalization(.never)
-            .padding(.horizontal, 8)
-            .themedBackground()
-            .navigationTitle((path as NSString).lastPathComponent)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                Button(saving ? "…" : "Save") {
-                    Task {
-                        saving = true
-                        try? await app.service.writeFile(serverID: server.id, path: path, content: text)
-                        original = text; saving = false
+        // Only a loaded file can be saved: an empty editor after a failed read must never overwrite it.
+        LoadableView(state: state, retry: load) { _ in
+            TextEditor(text: $text)
+                .font(.mono(.footnote))
+                .autocorrectionDisabled().textInputAutocapitalization(.never)
+                .padding(.horizontal, 8)
+        }
+        .themedBackground()
+        .navigationTitle((path as NSString).lastPathComponent)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            Button(saving ? "…" : "Save") {
+                Task {
+                    saving = true
+                    if await $actionError.capture({ try await app.service.writeFile(serverID: server.id, path: path, content: text) }) {
+                        original = text
                     }
-                }.disabled(text == original)
-            }
-            .task {
-                text = (try? await app.service.readFile(serverID: server.id, path: path)) ?? ""
-                original = text
-            }
+                    saving = false
+                }
+            }.disabled(state.value == nil || text == original)
+        }
+        .errorAlert($actionError)
+        .task { await load() }
+    }
+
+    private func load() async {
+        do {
+            let content = try await app.service.readFile(serverID: server.id, path: path)
+            text = content; original = content
+            state = .loaded(content)
+        } catch { state = .failed(error) }
     }
 }
 
@@ -114,10 +132,29 @@ struct TextFileEditor: View {
 struct PropertiesEditorView: View {
     @Environment(AppState.self) private var app
     let server: Server
+    @State private var state: Loadable<String> = .idle
     @State private var props: [(key: String, value: String)] = []
     @State private var dirty = false
+    @State private var actionError: Error?
 
     var body: some View {
+        LoadableView(state: state, retry: load) { _ in form }
+        .navigationTitle("server.properties")
+        .toolbar {
+            Button("Save") {
+                Task {
+                    let out = "#Edited with Kurafuto\n" + props.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+                    if await $actionError.capture({ try await app.service.writeFile(serverID: server.id, path: "server.properties", content: out) }) {
+                        dirty = false
+                    }
+                }
+            }.disabled(!dirty || state.value == nil)
+        }
+        .errorAlert($actionError)
+        .task { await load() }
+    }
+
+    private var form: some View {
         Form {
             Group {
                 ForEach(props.indices, id: \.self) { i in
@@ -142,23 +179,17 @@ struct PropertiesEditorView: View {
         }
         .themedBackground()
         .entrance()
-        .navigationTitle("server.properties")
-        .toolbar {
-            Button("Save") {
-                Task {
-                    let out = "#Edited with Kurafuto\n" + props.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
-                    try? await app.service.writeFile(serverID: server.id, path: "server.properties", content: out)
-                    dirty = false
-                }
-            }.disabled(!dirty)
-        }
-        .task {
-            let raw = (try? await app.service.readFile(serverID: server.id, path: "server.properties")) ?? ""
+    }
+
+    private func load() async {
+        do {
+            let raw = try await app.service.readFile(serverID: server.id, path: "server.properties")
             props = raw.split(separator: "\n").compactMap { line in
                 let l = line.trimmingCharacters(in: .whitespaces)
                 guard !l.hasPrefix("#"), let eq = l.firstIndex(of: "=") else { return nil }
                 return (String(l[..<eq]), String(l[l.index(after: eq)...]))
             }
-        }
+            state = .loaded(raw)
+        } catch { state = .failed(error) }
     }
 }

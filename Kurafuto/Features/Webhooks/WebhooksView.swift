@@ -7,6 +7,7 @@ struct WebhooksView: View {
     @State private var state: Loadable<[Webhook]> = .idle
     @State private var editing: Webhook?
     @State private var confirm: ConfirmAction?
+    @State private var actionError: Error?
 
     var body: some View {
         LoadableView(state: state, retry: load) { hooks in
@@ -33,7 +34,9 @@ struct WebhooksView: View {
                         let doomed = idx.map { hooks[$0] }
                         confirm = ConfirmAction(title: doomed.count == 1 ? "Delete webhook?" : "Delete \(doomed.count) webhooks?",
                                                 message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
-                            for h in doomed { try? await app.service.deleteWebhook(id: h.id, serverID: server.id) }
+                            await $actionError.capture {
+                                for h in doomed { try await app.service.deleteWebhook(id: h.id, serverID: server.id) }
+                            }
                             await load()
                         }
                     }
@@ -46,6 +49,7 @@ struct WebhooksView: View {
         }
         .navigationTitle("Webhooks")
         .destructiveConfirmation($confirm)
+        .errorAlert($actionError)
         .toolbar {
             Button {
                 editing = Webhook(id: 0, webhookType: .discord, name: "", url: "", botName: "Server Bot",
@@ -55,7 +59,10 @@ struct WebhooksView: View {
         }
         .sheet(item: $editing) { h in
             WebhookEditor(webhook: h) { saved in
-                Task { try? await app.service.saveWebhook(saved, serverID: server.id); await load() }
+                Task {
+                    await $actionError.capture { try await app.service.saveWebhook(saved, serverID: server.id) }
+                    await load()
+                }
             }
         }
         .task { await load() }

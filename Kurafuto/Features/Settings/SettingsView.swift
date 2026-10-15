@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(AppState.self) private var app
     @AppStorage("pollSeconds") private var pollSeconds = 5.0
     @State private var confirmLogoutAll = false
+    @State private var actionError: Error?
 
     var body: some View {
         NavigationStack {
@@ -60,9 +61,11 @@ struct SettingsView: View {
             }
             .themedBackground()
             .navigationTitle("Settings")
+            .errorAlert($actionError)
             .confirmationDialog("End all sessions for this user?", isPresented: $confirmLogoutAll, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) {
-                    Task { try? await app.service.invalidateAllSessions(); app.signOut() }
+                    // Signing out locally after a failed invalidation would leave the other sessions valid unnoticed.
+                    Task { if await $actionError.capture({ try await app.service.invalidateAllSessions() }) { app.signOut() } }
                 }
             }
         }

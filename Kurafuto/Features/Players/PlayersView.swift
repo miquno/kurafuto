@@ -8,10 +8,15 @@ struct PlayersView: View {
     @State private var online: [String] = []
     @State private var newName = ""
     @State private var toast: String?
+    @State private var actionError: Error?
+    @State private var liveProblem: PanelProblem?
 
     var body: some View {
         List {
             Group {
+                if let liveProblem {
+                    StaleValuesBanner(problem: liveProblem).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                }
                 Section("Online (\(online.count))") {
                     if online.isEmpty {
                         Text("Nobody online").foregroundStyle(Theme.secondaryText)
@@ -54,6 +59,7 @@ struct PlayersView: View {
         .themedBackground()
         .entrance()
         .navigationTitle("Players")
+        .errorAlert($actionError)
         .overlay(alignment: .bottom) {
             if let toast {
                 Text(toast).font(.mono(.footnote)).padding(.horizontal, 14).padding(.vertical, 10)
@@ -65,7 +71,10 @@ struct PlayersView: View {
         }
         .task {
             while !Task.isCancelled {
-                online = (try? await app.service.stats(serverID: server.id).players) ?? []
+                do {
+                    online = try await app.service.stats(serverID: server.id).players
+                    liveProblem = nil
+                } catch { liveProblem = error.panelProblem }
                 try? await Task.sleep(for: .seconds(5))
             }
         }
@@ -73,7 +82,7 @@ struct PlayersView: View {
 
     private func cmd(_ c: String) {
         Task {
-            try? await app.service.sendCommand(c, serverID: server.id)
+            guard await $actionError.capture({ try await app.service.sendCommand(c, serverID: server.id) }) else { return }
             withAnimation { toast = "Sent: \(c)" }
             try? await Task.sleep(for: .seconds(2))
             withAnimation { toast = nil }

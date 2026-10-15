@@ -8,6 +8,7 @@ struct AdminView: View {
     @State private var servers: [Server] = []
     @State private var editUser: CraftyUser?
     @State private var editRole: Role?
+    @State private var actionError: Error?
 
     var body: some View {
         NavigationStack {
@@ -73,14 +74,21 @@ struct AdminView: View {
             }
             .sheet(item: $editUser) { u in
                 UserEditor(user: u, roles: roles) { saved, pw in
-                    Task { try? await app.service.saveUser(saved, password: pw); await load() }
+                    Task {
+                        await $actionError.capture { try await app.service.saveUser(saved, password: pw) }
+                        await load()
+                    }
                 }
             }
             .sheet(item: $editRole) { r in
                 RoleEditor(role: r, servers: servers) { saved in
-                    Task { try? await app.service.saveRole(saved); await load() }
+                    Task {
+                        await $actionError.capture { try await app.service.saveRole(saved) }
+                        await load()
+                    }
                 }
             }
+            .errorAlert($actionError)
             // Reload once the rights are known: a user without ROLES_CONFIG must not request roles.
             .task(id: app.access) { await load() }
         }
