@@ -84,3 +84,25 @@ enum CraftyError: LocalizedError {
         }
     }
 }
+
+/// What went wrong, as far as the user can act on it.
+enum PanelProblem: Equatable {
+    case offline, sessionExpired, permissionDenied, other
+}
+
+extension Error {
+    var panelProblem: PanelProblem {
+        switch self as? CraftyError {
+        case .unauthorized: return .sessionExpired
+        case .forbidden: return .permissionDenied
+        case .transport(let underlying): return underlying.isOffline ? .offline : .other
+        default: return isOffline ? .offline : .other
+        }
+    }
+
+    private var isOffline: Bool {
+        guard let code = (self as? URLError)?.code else { return false }
+        return [.notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .cannotFindHost,
+                .dnsLookupFailed, .timedOut, .internationalRoamingOff, .dataNotAllowed].contains(code)
+    }
+}

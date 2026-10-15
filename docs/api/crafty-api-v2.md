@@ -49,6 +49,7 @@ Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.
 
 - **Panel permissions:** `permissions` is a bit string in `EnumPermissionsCrafty` order – server creation, user config, roles config. Superusers get `"000"`, so check `superuser` from `/users/@me` first. Adding is allowed when the bit is set and the counter is below the limit, or the limit is `-1`; a limit of `0` blocks adding (`can_add_in_crafty`). Per-server rights of the signed-in user are not exposed; the panel enforces them per request.
 - **Missing panel rights** answer **400** `NOT_AUTHORIZED` (e.g. `GET /roles` without ROLES_CONFIG), not 403.
+- **Invalid or expired token** (also after `invalidate_tokens`) answers **403** `ACCESS_DENIED`, not 401; `/metrics/*` does the same. **Wrong login data** answers **401** `INCORRECT_CREDENTIALS`. Disabled accounts get 403 `ACCOUNT_DISABLED`. Mapping in `APIClient.failure` (verified on 4.7.0 and 4.11.0).
 - **Fresh tokens:** a token issued in the same second as the user's creation or a permission change is rejected as invalid; log in again a moment later.
 
 More useful endpoints for later: `/api/v2/servers/{id}/users`, `/metrics/servers/{id}`, `/api/v2/crafty/config` (panel settings, superuser).

@@ -10,6 +10,8 @@ struct ServerDetailView: View {
     @State private var history: [StatPoint] = []
     @State private var busyAction: ServerAction?
     @State private var confirm: ConfirmAction?
+    @State private var actionError: Error?
+    @State private var liveProblem: PanelProblem?
     /// Start, restart and stop symbols differ in height; a shared box keeps the three buttons level.
     @ScaledMetric(relativeTo: .title3) private var actionIconHeight: CGFloat = 26
 
@@ -17,6 +19,7 @@ struct ServerDetailView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header.entrance(0)
+                if let liveProblem { StaleValuesBanner(problem: liveProblem) }
                 controls.entrance(1)
                 if let s = stats, s.running { live(s).entrance(2) }
                 manage.entrance(3)
@@ -44,6 +47,7 @@ struct ServerDetailView: View {
             .accessibilityLabel("More actions")
         }
         .destructiveConfirmation($confirm)
+        .errorAlert($actionError)
         .task { await poll() }
         .refreshable { await refresh() }
     }
@@ -226,7 +230,10 @@ struct ServerDetailView: View {
     // MARK: Data
 
     private func refresh() async {
-        guard let s = try? await app.service.stats(serverID: server.id) else { return }
+        let s: ServerStats
+        do { s = try await app.service.stats(serverID: server.id) }
+        catch { liveProblem = error.panelProblem; return }
+        liveProblem = nil
         stats = s
         history.append(StatPoint(date: .now, cpu: s.cpu, mem: s.memPercent))
         if history.count > 60 { history.removeFirst() }
@@ -247,6 +254,7 @@ struct ServerDetailView: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
+            actionError = error
         }
         await refresh()
     }

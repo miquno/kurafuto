@@ -70,17 +70,15 @@ final class APIClient: NSObject, @unchecked Sendable {
             throw CraftyError.transport(error)
         }
 
-        let http = response as? HTTPURLResponse
-        if http?.statusCode == 401 { throw CraftyError.unauthorized }
-
-        let decoder = JSONDecoder()
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         let envelope: Envelope<T>
-        do { envelope = try decoder.decode(Envelope<T>.self, from: data) }
-        catch { throw CraftyError.decoding(error) }
-
+        do { envelope = try JSONDecoder().decode(Envelope<T>.self, from: data) }
+        catch {
+            guard (200..<300).contains(status) else { throw fail(Self.failure(status: status, error: nil, detail: nil, path: path)) }
+            throw CraftyError.decoding(error)
+        }
         guard envelope.status == "ok" else {
-            if http?.statusCode == 403 { throw CraftyError.forbidden(envelope.errorData ?? path) }
-            throw CraftyError.server(code: envelope.error ?? "\(http?.statusCode ?? 0)", detail: envelope.errorData)
+            throw fail(Self.failure(status: status, error: envelope.error, detail: envelope.errorData, path: path))
         }
         if let d = envelope.data { return d }
         if let e = Empty() as? T { return e }
@@ -106,11 +104,40 @@ final class APIClient: NSObject, @unchecked Sendable {
 
     /// For `/metrics/*` (OpenMetrics text, no JSON envelope).
     func rawText(_ path: String) async throws -> String {
-        var req = URLRequest(url: baseURL.appending(path: path))
+        var req = URLRequest(url: baseURL.appending(path: path), timeoutInterval: 20)
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        let (data, _) = try await session.data(for: req)
+        let data: Data, response: URLResponse
+        do { (data, response) = try await session.data(for: req) }
+        catch { throw CraftyError.transport(error) }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            let envelope = try? JSONDecoder().decode(Envelope<Empty>.self, from: data)
+            throw fail(Self.failure(status: status, error: envelope?.error, detail: envelope?.errorData, path: path))
+        }
         return String(decoding: data, as: UTF8.self)
     }
+
+    /// Maps a failed response. Crafty answers an invalid or expired token with 403 `ACCESS_DENIED`,
+    /// missing rights with 400 `NOT_AUTHORIZED`, and wrong login data with 401 `INCORRECT_CREDENTIALS`.
+    static func failure(status: Int, error: String?, detail: String?, path: String) -> CraftyError {
+        switch (status, error) {
+        case (_, "NOT_AUTHORIZED"): .forbidden(detail ?? path)
+        case (401, nil), (401, "ACCESS_DENIED"), (403, "ACCESS_DENIED"): .unauthorized
+        case (403, nil): .forbidden(detail ?? path)
+        default: .server(code: error ?? "\(status)", detail: detail)
+        }
+    }
+
+    /// Announces a rejected token so the app can ask for a new sign-in. The notification carries no data.
+    private func fail(_ error: CraftyError) -> CraftyError {
+        if case .unauthorized = error { NotificationCenter.default.post(name: .panelSessionExpired, object: self) }
+        return error
+    }
+}
+
+extension Notification.Name {
+    /// Posted with the `APIClient` as object when the panel rejects its token.
+    static let panelSessionExpired = Notification.Name("PanelSessionExpired")
 }
 
 // MARK: - Self-signed certificates (Crafty default) – trust on first use with pinning
