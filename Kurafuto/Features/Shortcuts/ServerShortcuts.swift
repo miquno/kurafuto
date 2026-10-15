@@ -42,6 +42,18 @@ enum ServerShortcuts {
         try await service.send(.stop, serverID: serverID)
     }
 
+    /// Face ID only works while the app is in front (LocalAuthentication refuses background callers), so a locked
+    /// stop brings the app forward first; its lock screen unlocks as usual. False when nobody unlocks in time.
+    static func waitUntilUnlocked(_ lock: AppLock, timeout: Duration = .seconds(30)) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        while lock.isLocked {
+            guard clock.now < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        return true
+    }
+
     /// Live from the panel, not the widget snapshot. Nil while the server is not running.
     static func players(serverID: String, app: AppState? = app) async throws -> (online: Int, max: Int)? {
         let stats = try await service(app).stats(serverID: serverID)
@@ -98,7 +110,7 @@ struct StartServerIntent: AppIntent {
     }
 }
 
-struct StopServerIntent: AppIntent {
+struct StopServerIntent: AppIntent, ForegroundContinuableIntent {
     static let title: LocalizedStringResource = "Stop Server"
     static let description = IntentDescription("Stops a server on your Crafty panel after you confirm.")
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
@@ -107,6 +119,10 @@ struct StopServerIntent: AppIntent {
     var server: PanelServerEntity
 
     static var parameterSummary: some ParameterSummary { Summary("Stop \(\.$server)") }
+
+    /// In the background, unless the app lock needs the app in front for Face ID.
+    @available(iOS 26, *)
+    static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
 
     private static let stopAction = ConfirmationActionName.custom(acceptLabel: "Stop", acceptAlternatives: [],
                                                                   denyLabel: "Cancel", denyAlternatives: [], destructive: true)
@@ -119,6 +135,15 @@ struct StopServerIntent: AppIntent {
         } else {
             // iOS 17 only offers the generic "Run Stop Server?" question without a deprecated API.
             try await requestConfirmation()
+        }
+        if let lock = ServerShortcuts.app?.lock, lock.isEnabled {
+            let dialog: IntentDialog = "Kurafuto opens to confirm it's you."
+            if #available(iOS 26, *) {
+                try await continueInForeground(dialog, alwaysConfirm: false)
+            } else {
+                try await requestToContinueInForeground(dialog)
+            }
+            guard await ServerShortcuts.waitUntilUnlocked(lock) else { throw ServerShortcuts.Failure.notConfirmed }
         }
         try await ServerShortcuts.stop(serverID: server.id, name: server.name)
         return .result(dialog: "Stopping \(server.name).")

@@ -4782,6 +4782,28 @@
         }
       }
     },
+    "Kurafuto opens to confirm it's you." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto öffnet sich, um zu bestätigen, dass du es bist."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本人確認のため Kurafuto を開きます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto 将打开以确认是你本人。"
+          }
+        }
+      }
+    },
     "Language" : {
       "localizations" : {
         "de" : {

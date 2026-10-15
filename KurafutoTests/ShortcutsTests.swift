@@ -103,4 +103,24 @@ final class ShortcutsTests: XCTestCase {
         let byID = try await query.entities(for: [MockData.creativeID, "unknown"])
         XCTAssertEqual(byID.map(\.name), ["Creative World"])
     }
+
+    /// A locked stop brings the app forward and waits for its lock screen; nobody unlocking means no stop.
+    func testLockedStopWaitsForTheUnlock() async throws {
+        let auth = FakeAuthenticator()
+        auth.answer = true
+        let (state, _) = try app(lockedWith: auth)
+        XCTAssertTrue(state.lock.isLocked)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            await state.lock.unlock()
+        }
+        let unlocked = await ServerShortcuts.waitUntilUnlocked(state.lock, timeout: .seconds(5))
+        XCTAssertTrue(unlocked)
+
+        let refused = FakeAuthenticator()
+        let (stillLocked, _) = try app(lockedWith: refused)
+        await stillLocked.lock.unlock()
+        let gaveUp = await ServerShortcuts.waitUntilUnlocked(stillLocked.lock, timeout: .milliseconds(400))
+        XCTAssertFalse(gaveUp)
+    }
 }

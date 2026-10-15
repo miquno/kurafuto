@@ -54,7 +54,7 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 
 ## Siri and Shortcuts
 
-`Features/Shortcuts/ServerShortcuts.swift` defines the App Intents Start Server, Stop Server and Player Count, their `PanelServerEntity` (listed live from the active panel) and the App Shortcuts phrases. They run in the app's process: `KurafutoApp` hands its `AppState` to `ServerShortcuts` at launch, also when iOS starts the app in the background for an action, and the intents use the active panel's service. All need an unlocked device; Stop asks for confirmation and goes through `AppLock.authorize` (ADR 0010). The Servers tab updates the App Shortcuts parameters after loading, so Siri knows the server names.
+`Features/Shortcuts/ServerShortcuts.swift` defines the App Intents Start Server, Stop Server and Player Count, their `PanelServerEntity` (listed live from the active panel) and the App Shortcuts phrases. They run in the app's process: `KurafutoApp` hands its `AppState` to `ServerShortcuts` at launch, also when iOS starts the app in the background for an action, and the intents use the active panel's service. All need an unlocked device; Stop asks for confirmation and goes through `AppLock.authorize`. With the app lock on, Stop first brings the app to the front, because iOS allows Face ID only for foreground apps, and waits for the lock screen to be unlocked (ADR 0010). The Servers tab updates the App Shortcuts parameters after loading, so Siri knows the server names.
 
 ## Localization
 
