@@ -3,17 +3,18 @@ import SwiftUI
 /// Host overview: CPU/RAM/disk of the machine, panel version, announcements from the panel.
 struct PanelOverviewView: View {
     @Environment(AppState.self) private var app
-    @State private var host: HostStats?
+    @State private var host: Loadable<HostStats> = .idle
     @State private var news: [Announcement] = []
+    @State private var actionError: Error?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    if let h = host {
-                        hostSection(h).entrance(0)
-                    } else {
-                        ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, minHeight: 160)
+                    switch host {
+                    case .loaded(let h): hostSection(h).entrance(0)
+                    case .failed(let e): StaleValuesBanner(problem: e.panelProblem)
+                    case .idle, .loading: ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, minHeight: 160)
                     }
                     announcements.entrance(2)
                 }
@@ -22,6 +23,7 @@ struct PanelOverviewView: View {
             }
             .themedBackground()
             .navigationTitle("Panel")
+            .errorAlert($actionError)
             .refreshable { await load() }
             .task { await load() }
         }
@@ -78,7 +80,7 @@ struct PanelOverviewView: View {
                     Spacer(minLength: 0)
                     Button {
                         Task {
-                            try? await app.service.clearAnnouncement(id: n.id)
+                            guard await $actionError.capture({ try await app.service.clearAnnouncement(id: n.id) }) else { return }
                             withAnimation(.snappy) { news.removeAll { $0.id == n.id } }
                         }
                     } label: {
@@ -95,7 +97,9 @@ struct PanelOverviewView: View {
     }
 
     private func load() async {
-        host = try? await app.service.hostStats()
+        do { host = .loaded(try await app.service.hostStats()) }
+        catch { host = .failed(error) }
+        // Announcements are optional extras; without them the section simply stays empty.
         news = (try? await app.service.announcements()) ?? []
     }
 }

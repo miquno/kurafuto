@@ -531,6 +531,15 @@ struct StaleValuesBanner: View {
     }
 }
 
+extension Binding where Value == Error? {
+    /// Runs `operation`; a failure lands here and shows through `.errorAlert`. Returns whether it succeeded.
+    @MainActor @discardableResult
+    func capture(_ operation: () async throws -> Void) async -> Bool {
+        do { try await operation(); return true }
+        catch { wrappedValue = error; return false }
+    }
+}
+
 extension View {
     /// Shows why an action failed. A rejected token is left to the sign-in sheet in `RootView`.
     func errorAlert(_ error: Binding<Error?>) -> some View {

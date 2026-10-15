@@ -9,6 +9,7 @@ struct ConsoleView: View {
     @State private var history: [String] = []
     @State private var autoScroll = true
     @State private var filter = ""
+    @State private var actionError: Error?
     @FocusState private var focused: Bool
 
     private let quick = ["list", "save-all", "weather clear", "time set day", "say Hello!", "whitelist list"]
@@ -93,6 +94,7 @@ struct ConsoleView: View {
         .navigationTitle("Console")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $filter, prompt: "Filter")
+        .errorAlert($actionError)
         .toolbar {
             Toggle(isOn: $autoScroll) { Image(systemName: "arrow.down.to.line") }
                 .accessibilityLabel("Auto-scroll")
@@ -125,7 +127,7 @@ struct ConsoleView: View {
         guard !c.isEmpty else { return }
         input = ""
         history.append(c)
-        try? await app.service.sendCommand(c, serverID: server.id)
+        await $actionError.capture { try await app.service.sendCommand(c, serverID: server.id) }
     }
 }
 

@@ -7,6 +7,7 @@ struct SchedulesView: View {
     @State private var state: Loadable<[Schedule]> = .idle
     @State private var editing: Schedule?
     @State private var confirm: ConfirmAction?
+    @State private var actionError: Error?
 
     var body: some View {
         LoadableView(state: state, retry: load) { list in
@@ -25,7 +26,11 @@ struct SchedulesView: View {
                                 }
                                 Spacer()
                                 Toggle("", isOn: Binding(get: { s.enabled }, set: { v in
-                                    Task { var c = s; c.enabled = v; try? await app.service.updateSchedule(c, serverID: server.id); await load() }
+                                    Task {
+                                        var c = s; c.enabled = v
+                                        await $actionError.capture { try await app.service.updateSchedule(c, serverID: server.id) }
+                                        await load()
+                                    }
                                 })).labelsHidden()
                             }
                         }
@@ -34,7 +39,9 @@ struct SchedulesView: View {
                         let doomed = idx.map { list[$0] }
                         confirm = ConfirmAction(title: doomed.count == 1 ? "Delete schedule?" : "Delete \(doomed.count) schedules?",
                                                 message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
-                            for s in doomed { try? await app.service.deleteSchedule(id: s.id, serverID: server.id) }
+                            await $actionError.capture {
+                                for s in doomed { try await app.service.deleteSchedule(id: s.id, serverID: server.id) }
+                            }
                             await load()
                         }
                     }
@@ -47,6 +54,7 @@ struct SchedulesView: View {
         }
         .navigationTitle("Schedules")
         .destructiveConfirmation($confirm)
+        .errorAlert($actionError)
         .toolbar {
             Button { editing = Schedule(id: 0, name: "", enabled: true, action: .restart, interval: 1, intervalType: .days,
                                         command: nil, parent: nil, oneTime: false, cronString: nil, delay: 0, nextRun: nil) }
@@ -56,8 +64,10 @@ struct SchedulesView: View {
         .sheet(item: $editing) { s in
             ScheduleEditor(schedule: s, all: state.value ?? []) { saved in
                 Task {
-                    if saved.id == 0 { try? await app.service.createSchedule(saved, serverID: server.id) }
-                    else { try? await app.service.updateSchedule(saved, serverID: server.id) }
+                    await $actionError.capture {
+                        if saved.id == 0 { try await app.service.createSchedule(saved, serverID: server.id) }
+                        else { try await app.service.updateSchedule(saved, serverID: server.id) }
+                    }
                     await load()
                 }
             }

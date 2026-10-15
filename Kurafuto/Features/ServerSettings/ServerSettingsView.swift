@@ -8,6 +8,7 @@ struct ServerSettingsView: View {
     @State private var draft: Server?
     @State private var confirmDelete = false
     @State private var deleteText = ""
+    @State private var actionError: Error?
 
     var body: some View {
         Form {
@@ -50,7 +51,7 @@ struct ServerSettingsView: View {
         .toolbar {
             Button("Save") {
                 guard let d = draft else { return }
-                Task { try? await app.service.updateServer(d); server = d }
+                Task { if await $actionError.capture({ try await app.service.updateServer(d) }) { server = d } }
             }.disabled(draft == server)
         }
         .alert("Permanently delete server?", isPresented: $confirmDelete) {
@@ -59,12 +60,12 @@ struct ServerSettingsView: View {
                 guard deleteText == server.serverName else { return }
                 Task {
                     guard await app.lock.authorize("Delete \(server.serverName)") else { return }
-                    try? await app.service.deleteServer(id: server.id)
-                    dismiss()
+                    if await $actionError.capture({ try await app.service.deleteServer(id: server.id) }) { dismiss() }
                 }
             }
             Button("Cancel", role: .cancel) {}
         } message: { Text("Type “\(server.serverName)” to confirm.") }
+        .errorAlert($actionError)
         .onAppear { draft = server }
     }
 }

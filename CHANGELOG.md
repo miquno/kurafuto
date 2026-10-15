@@ -24,4 +24,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Demo mode: start times and console timestamps follow the current clock instead of fixed dates, and starting or stopping a demo server updates its start time.
 - Clearer errors: screens tell apart an unreachable panel, a signed-out session and missing rights. When live values stop updating, the dashboard and server screen say so. Failed start, stop, restart and kill actions show why.
 - When the panel signs you out (expired token or "Sign Out All Sessions"), Kurafuto asks you to sign in again to the same panel instead of failing quietly.
+- Failed saves and actions everywhere (schedules, webhooks, files, backups, players, console commands, users and roles, server settings, announcements) now show why instead of failing silently. The file editors only allow saving once the file has loaded, so a failed load can no longer empty a file.
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.

@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import Kurafuto
 
@@ -43,6 +44,18 @@ final class ErrorStateTests: XCTestCase {
         XCTAssertEqual(URLError(.timedOut).panelProblem, .offline)
         XCTAssertEqual(CraftyError.transport(URLError(.badServerResponse)).panelProblem, .other)
         XCTAssertEqual(CraftyError.decoding(URLError(.cannotParseResponse)).panelProblem, .other)
+    }
+
+    @MainActor
+    func testCaptureKeepsTheErrorForTheAlert() async {
+        var stored: Error?
+        let binding = Binding(get: { stored }, set: { stored = $0 })
+        let succeeded = await binding.capture {}
+        XCTAssertTrue(succeeded)
+        XCTAssertNil(stored)
+        let failed = await binding.capture { throw CraftyError.forbidden("Insufficient permissions") }
+        XCTAssertFalse(failed)
+        XCTAssertEqual(stored?.panelProblem, .permissionDenied)
     }
 
     func testOnlyTheActivePanelClientCanExpireTheSession() throws {

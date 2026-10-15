@@ -13,6 +13,7 @@ private struct EULAPrompt: ViewModifier {
     @Environment(\.openURL) private var openURL
     @Binding var server: Server?
     let onAccepted: () async -> Void
+    @State private var error: Error?
 
     // The same page the Crafty web panel links to.
     private static let eula = URL(string: "https://www.minecraft.net/en-us/eula") ?? URL(filePath: "/")
@@ -23,7 +24,7 @@ private struct EULAPrompt: ViewModifier {
                       presenting: server) { s in
             Button("Accept and Start") {
                 Task {
-                    try? await app.service.acceptEULA(serverID: s.id)
+                    await $error.capture { try await app.service.acceptEULA(serverID: s.id) }
                     await onAccepted()
                 }
             }
@@ -32,6 +33,7 @@ private struct EULAPrompt: ViewModifier {
         } message: { s in
             Text("\(s.serverName) can only start after you accept the Minecraft End User License Agreement.")
         }
+        .errorAlert($error)
     }
 }
 
