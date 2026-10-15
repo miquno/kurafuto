@@ -168,10 +168,10 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         }
     }
 
-    // MARK: Schedules – create/update/delete ✅, list ⚠️
-    func schedules(serverID: String) async throws -> [Schedule] {
-        try await client.request(.get, "/api/v2/servers/\(serverID)/tasks")
-    }
+    // MARK: Schedules ✅ create/update/delete
+    /// Crafty 4.7–4.11 cannot list schedules: `GET …/tasks` is an empty stub that answers 500, and
+    /// `POST …/tasks` returns no id for disabled or chained schedules. Only the web panel lists them.
+    func schedules(serverID: String) async throws -> [Schedule]? { nil }
     func createSchedule(_ schedule: Schedule, serverID: String) async throws {
         let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/tasks", body: .json(schedule))
     }

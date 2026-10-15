@@ -21,8 +21,8 @@ against local test panels **4.7.0** and **4.11.0** (official Docker images, Pape
 | sendCommand | `POST /api/v2/servers/{id}/stdin` (text/plain, no leading /) | ✅ | ✅ |
 | logs | `GET /api/v2/servers/{id}/logs?file=&colors=&raw=&html=` | ✅ | ✅ live buffer and file |
 | stats | `GET /api/v2/servers/{id}/stats` | ✅ | ✅ stopped and running |
-| schedules | `GET /api/v2/servers/{id}/tasks` | ⚠️ not in spec | – |
-| create/update/deleteSchedule | `POST …/tasks`, `PATCH/DELETE …/tasks/{taskID}` | ✅ | – |
+| schedules | none: `GET /api/v2/servers/{id}/tasks` is an empty stub (500) | ❌ not in spec | ✅ not listable, returns nil |
+| create/update/deleteSchedule | `POST …/tasks`, `PATCH/DELETE …/tasks/{taskID}` | ✅ | ✅ interval, daily time, cron, chained |
 | webhooks | `GET /api/v2/servers/{id}/webhook` | ✅ | – |
 | saveWebhook | `POST /api/v2/servers/{id}/webhook` · `PATCH /api/v2/server/{id}/webhook/{wid}` | ✅ (note singular "server") | – |
 | panelAccess | `GET /api/v2/users/@me` (superuser) + `GET /api/v2/users/@me/permissions` | ✅ | ✅ superuser, no rights, mask `101` |
@@ -47,6 +47,9 @@ Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.
 - **Logs buffer:** `/logs` without `file` returns a sliding window of `virtual_terminal_lines` (default 70), so polling diffs by overlap, not by count.
 - **EULA:** a Java server only starts with `eula=true` in `eula.txt`. `start_server` still answers `ok`; the refusal arrives about a second later only as WebSocket event `{"event":"send_eula_bootbox","data":{"id":…}}` to the user who pressed start. The app opens the socket before sending `start_server`, waits up to 4 s (console output ends the wait early) and then asks; `action/eula` accepts and starts in one step. Creating a Java server accepts `agree_to_eula` in `download_jar_create_data` (4.7.0 and 4.11.0), which writes the file up front.
 - **Backup:** `action/backup_server` without an id uses the default backup config on 4.11.0. On 4.7.0 it answers `ok` but the backup fails inside the panel (`BackupsDoesNotExist`); it needs `action/backup_server/{backup_id}`. To be fixed together with the backups item in 0.3.
+
+- **Schedules:** there is no list endpoint. `GET …/tasks` is an unimplemented stub that answers 500; only the web panel's server-rendered page lists schedules. `GET …/tasks/{taskID}` exists but returns the bare row without the `{status,data}` envelope, and `POST …/tasks` returns `"schedule_id": null` for disabled or chained schedules, so ids cannot be collected either. Kurafuto therefore only creates schedules and links to the web panel for the rest.
+- **Schedule body:** validated with `additionalProperties: false`, so `schedule_id` or `next_run` make the request fail (`INVALID_JSON_SCHEMA`). `interval_type` is `minutes`, `hours`, `days`, `reaction` (chained) or `""` (cron); weekdays are not accepted. The task runner executes `command`: for start, stop, restart and backup it must be `start_server`, `stop_server`, `restart_server` or `backup_server`, which the web panel fills in; `action` is only a label. `start_time` (`HH:MM`, panel time) is used for `days` only. Chained schedules use `parent` plus `delay` seconds after the parent ran. Backup schedules need `action_id` (backup config id) on 4.7.0, so the app offers them together with the backups item. An invalid cron string answers **405** with the message in `error`.
 
 - **Panel permissions:** `permissions` is a bit string in `EnumPermissionsCrafty` order – server creation, user config, roles config. Superusers get `"000"`, so check `superuser` from `/users/@me` first. Adding is allowed when the bit is set and the counter is below the limit, or the limit is `-1`; a limit of `0` blocks adding (`can_add_in_crafty`). Per-server rights of the signed-in user are not exposed; the panel enforces them per request.
 - **Missing panel rights** answer **400** `NOT_AUTHORIZED` (e.g. `GET /roles` without ROLES_CONFIG), not 403.

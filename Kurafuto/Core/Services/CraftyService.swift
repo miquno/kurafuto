@@ -26,7 +26,8 @@ protocol CraftyService: AnyObject, Sendable {
     func consoleStream(serverID: String) -> AsyncStream<LogLine>
 
     // Schedules
-    func schedules(serverID: String) async throws -> [Schedule]
+    /// Nil when the panel cannot list schedules: Crafty 4.7–4.11 has no list endpoint.
+    func schedules(serverID: String) async throws -> [Schedule]?
     func createSchedule(_ schedule: Schedule, serverID: String) async throws
     func updateSchedule(_ schedule: Schedule, serverID: String) async throws
     func deleteSchedule(id: Int, serverID: String) async throws
