@@ -46,6 +46,8 @@ final class MockServiceTests: XCTestCase {
     func testExistingDemoServersStartWithoutEULA() async throws {
         let s = MockCraftyService(latency: .zero)
         try await s.send(.start, serverID: MockData.creativeID)
+    }
+
     func testDemoTimesFollowTheClock() throws {
         let started = try XCTUnwrap(MockData.stats[MockData.survivalID]?.started.flatMap(ServerStats.startTime))
         XCTAssertLessThan(started, .now, "a demo server never starts in the future")
