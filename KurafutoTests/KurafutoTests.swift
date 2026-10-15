@@ -15,6 +15,32 @@ final class MockServiceTests: XCTestCase {
         XCTAssertTrue(after.running)
     }
 
+    func testDemoTimesFollowTheClock() throws {
+        let started = try XCTUnwrap(MockData.stats[MockData.survivalID]?.started.flatMap(ServerStats.startTime))
+        XCTAssertLessThan(started, .now, "a demo server never starts in the future")
+        XCTAssertGreaterThan(started, .now.addingTimeInterval(-86_400), "the demo uptime stays plausible")
+
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm:ss"
+        for line in MockData.consoleLines {
+            let stamp = String(line.dropFirst().prefix(8))
+            XCTAssertNotNil(f.date(from: stamp), "24 h timestamp regardless of locale: \(line)")
+        }
+    }
+
+    func testStartAndStopUpdateStartTime() async throws {
+        let s = MockCraftyService(latency: .zero)
+        let id = MockData.creativeID
+        try await s.send(.start, serverID: id)
+        try await Task.sleep(for: .seconds(3.5))
+        let started = try await s.stats(serverID: id).started.flatMap(ServerStats.startTime)
+        XCTAssertEqual(try XCTUnwrap(started).timeIntervalSinceNow, 0, accuracy: 10)
+        try await s.send(.stop, serverID: id)
+        let stopped = try await s.stats(serverID: id)
+        XCTAssertNil(stopped.started)
+    }
+
     func testCommandAppearsInLogs() async throws {
         let s = MockCraftyService(latency: .zero)
         try await s.sendCommand("say hello", serverID: MockData.survivalID)
