@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Body of `POST /api/v2/auth/login`. `totp` must be left out when empty:
@@ -265,6 +266,33 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         struct Body: Encodable { let parent: String, name: String, directory: Bool }
         let _: Empty = try await client.request(.put, "/api/v2/servers/\(serverID)/files/create",
                                                 body: .json(Body(parent: parent, name: name, directory: true)))
+    }
+    /// Same protocol as the web panel's `upload.js` (4.7.0 and 4.11.0): an empty first request announces the
+    /// file, then every chunk carries its index and SHA-256; the panel joins them after the last one.
+    func uploadFile(serverID: String, folder: String, name: String, from file: URL,
+                    progress: @escaping @Sendable (Double) -> Void) async throws {
+        let size = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        try FileUpload.check(name: name, folder: folder, size: size)
+        let handle = try FileHandle(forReadingFrom: file)
+        defer { try? handle.close() }
+        let path = "/api/v2/servers/\(serverID)/files/upload"
+        let total = FileUpload.chunkCount(for: size)
+        var headers = ["chunked": "true", "fileSize": "\(size)", "totalChunks": "\(total)",
+                       "fileName": name, "location": folder, "fileId": UUID().uuidString.lowercased()]
+        _ = try await client.upload(path, headers: headers, body: nil)
+        for index in 0..<total {
+            try Task.checkCancellation()
+            guard let chunk = try handle.read(upToCount: FileUpload.chunkBytes), !chunk.isEmpty else {
+                throw CraftyError.uploadRefused("The file changed while it was being uploaded.")
+            }
+            headers["chunkId"] = "\(index)"
+            headers["chunkHash"] = SHA256.hash(data: chunk).map { String(format: "%02x", $0) }.joined()
+            let status = try await client.upload(path, headers: headers, body: chunk)
+            progress(Double(index + 1) / Double(total))
+            if index == total - 1, status != "completed" {
+                throw CraftyError.server(code: "UPLOAD_INCOMPLETE", detail: status)
+            }
+        }
     }
     func deleteFile(serverID: String, path: String) async throws {
         let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/files",

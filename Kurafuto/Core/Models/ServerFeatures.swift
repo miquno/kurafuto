@@ -352,6 +352,33 @@ enum ServerPath {
     }
 }
 
+/// Limits for uploads into a server folder (`POST …/files/upload`).
+enum FileUpload {
+    /// Plugins, mods and datapacks are far smaller. Whole worlds and modpacks belong in the web panel or SFTP,
+    /// where a dropped mobile connection does not cost the whole transfer.
+    static let maxBytes = 500 * 1_048_576
+    /// The web panel sends 10 MB pieces; smaller ones survive a weak mobile connection better.
+    static let chunkBytes = 5 * 1_048_576
+
+    static func chunkCount(for size: Int) -> Int { (size + chunkBytes - 1) / chunkBytes }
+
+    /// Throws when the app should not send the file. The panel reads `fileName` and `location` from HTTP
+    /// headers, which carry ASCII only (browsers refuse anything else as well).
+    static func check(name: String, folder: String, size: Int) throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        guard name.allSatisfy(\.isASCII) else {
+            throw CraftyError.uploadRefused("Rename the file to use only English letters, digits and simple punctuation.")
+        }
+        guard folder.allSatisfy(\.isASCII) else {
+            throw CraftyError.uploadRefused("Files can only be uploaded into folders with plain ASCII names.")
+        }
+        guard size > 0 else { throw CraftyError.uploadRefused("The file is empty.") }
+        guard size <= maxBytes else {
+            throw CraftyError.uploadRefused("Files larger than \(maxBytes / 1_048_576) MB can be uploaded in the web panel.")
+        }
+    }
+}
+
 /// A text file as read from the panel. `modifiedEpoch` goes back with the save, so the panel can refuse
 /// to overwrite a file that changed in the meantime.
 struct PanelFile: Decodable, Hashable {

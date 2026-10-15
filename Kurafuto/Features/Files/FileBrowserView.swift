@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// File manager: browse folders, edit text files, create folders, delete.
+/// File manager: browse folders, edit text files, create folders, upload files, delete.
 /// Paths always come from the panel's own listing; new names are checked with `ServerPath.isValidName`.
 struct FileBrowserView: View {
     @Environment(AppState.self) private var app
@@ -11,6 +11,14 @@ struct FileBrowserView: View {
     @State private var showNewFolder = false
     @State private var confirm: ConfirmAction?
     @State private var actionError: Error?
+    @State private var showImporter = false
+    @State private var upload: UploadProgress?
+    @State private var uploadTask: Task<Void, Never>?
+
+    struct UploadProgress: Equatable {
+        let name: String
+        var fraction: Double
+    }
 
     var body: some View {
         LoadableView(state: state, retry: load) { entries in
@@ -35,8 +43,21 @@ struct FileBrowserView: View {
         .destructiveConfirmation($confirm)
         .errorAlert($actionError)
         .toolbar {
-            Button { newFolder = ""; showNewFolder = true } label: { Image(systemName: "folder.badge.plus") }
-                .accessibilityLabel("New folder")
+            Menu {
+                Button { newFolder = ""; showNewFolder = true } label: { Label("New Folder", systemImage: "folder.badge.plus") }
+                Button { showImporter = true } label: { Label("Upload File", systemImage: "square.and.arrow.up") }
+                    .disabled(upload != nil)
+            } label: { Image(systemName: "plus") }
+            .accessibilityLabel("Add")
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item]) { result in
+            switch result {
+            case .success(let url): prepareUpload(url)
+            case .failure(let error): actionError = error
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if let upload { uploadBanner(upload) }
         }
         .alert("New Folder", isPresented: $showNewFolder) {
             TextField("Name", text: $newFolder)
@@ -83,6 +104,63 @@ struct FileBrowserView: View {
     private func load() async {
         do { state = .loaded(try await app.service.listFiles(serverID: server.id, path: path)) }
         catch { state = .failed(error) }
+    }
+
+    // MARK: Upload
+
+    private func uploadBanner(_ upload: UploadProgress) -> some View {
+        HStack(spacing: 12) {
+            IconTile(symbol: "square.and.arrow.up", size: 32)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(upload.name).font(.mono(.subheadline)).lineLimit(1)
+                ProgressView(value: upload.fraction).tint(Theme.accent)
+                    .accessibilityLabel("Uploading \(upload.name)")
+            }
+            Button("Cancel") { uploadTask?.cancel() }
+                .font(.subheadline.weight(.semibold))
+        }
+        .card(padding: 14)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    /// Checks the picked file, and asks before replacing a file of the same name (the panel overwrites silently).
+    private func prepareUpload(_ url: URL) {
+        let name = url.lastPathComponent
+        let access = url.startAccessingSecurityScopedResource()
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        if access { url.stopAccessingSecurityScopedResource() }
+        do { try FileUpload.check(name: name, folder: path, size: size) } catch {
+            actionError = error
+            return
+        }
+        if state.value?.contains(where: { $0.name == name }) == true {
+            confirm = ConfirmAction(title: "Replace \(name)?",
+                                    message: "A file with this name is already in this folder. The upload replaces it.",
+                                    buttonLabel: "Replace") { startUpload(url, name: name) }
+        } else {
+            startUpload(url, name: name)
+        }
+    }
+
+    private func startUpload(_ url: URL, name: String) {
+        upload = UploadProgress(name: name, fraction: 0)
+        uploadTask = Task {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            do {
+                try await app.service.uploadFile(serverID: server.id, folder: path, name: name, from: url) { fraction in
+                    Task { @MainActor in upload?.fraction = fraction }
+                }
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } catch {
+                // A cancelled upload is the user's choice, not an error.
+                if !Task.isCancelled { actionError = error }
+            }
+            upload = nil
+            uploadTask = nil
+            await load()
+        }
     }
 }
 

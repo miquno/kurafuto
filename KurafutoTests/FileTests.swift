@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import Kurafuto
 
@@ -176,4 +177,145 @@ final class FileTests: XCTestCase {
     private static let readProperties = """
     {"status":"ok","data":{"content":"#Minecraft server properties\\nallow-flight=false\\n","attributes":{"mime":"text/plain","modified":"2026/10/15 10:14","size":"1.4KB","modified_epoch":1792052098.9447}}}
     """
+}
+
+/// Uploads follow the web panel's `upload.js`: an announcement, then chunks with index and SHA-256.
+final class FileUploadTests: XCTestCase {
+    private static let serverID = "7ffe0bd7-70f3-4f2c-8a9a-ad1a1e2dcb84"
+    private var file: URL!
+
+    override func setUpWithError() throws {
+        file = FileManager.default.temporaryDirectory.appendingPathComponent("Upload-\(UUID().uuidString).jar")
+        // Two full chunks and a short one, with a pattern so a misplaced chunk would change the hashes.
+        let bytes = (0..<(2 * FileUpload.chunkBytes + 1234)).map { UInt8(truncatingIfNeeded: $0 &* 31) }
+        try Data(bytes).write(to: file)
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: file)
+        StubPanel.reset()
+        super.tearDown()
+    }
+
+    private func live() throws -> LiveCraftyService {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubPanel.self]
+        return LiveCraftyService(client: APIClient(baseURL: try XCTUnwrap(URL(string: "https://panel.test:8443")),
+                                                   token: "t", configuration: configuration))
+    }
+
+    func testLimits() {
+        XCTAssertNoThrow(try FileUpload.check(name: "EssentialsX-2.21.jar", folder: "plugins", size: 3_000_000))
+        XCTAssertThrowsError(try FileUpload.check(name: "../escape.jar", folder: "plugins", size: 10))
+        XCTAssertThrowsError(try FileUpload.check(name: "Größe.jar", folder: "plugins", size: 10), "header values are ASCII")
+        XCTAssertThrowsError(try FileUpload.check(name: "a.jar", folder: "Welten/Über", size: 10))
+        XCTAssertThrowsError(try FileUpload.check(name: "a.jar", folder: "", size: 0), "the panel cannot take empty chunks")
+        XCTAssertThrowsError(try FileUpload.check(name: "a.zip", folder: "", size: FileUpload.maxBytes + 1))
+        XCTAssertEqual(FileUpload.chunkCount(for: 1), 1)
+        XCTAssertEqual(FileUpload.chunkCount(for: FileUpload.chunkBytes), 1)
+        XCTAssertEqual(FileUpload.chunkCount(for: FileUpload.chunkBytes + 1), 2)
+    }
+
+    func testAnnouncementThenHashedChunks() async throws {
+        StubPanel.respond(200, #"{"status":"ok","data":{"file-id":"x"}}"#)
+        StubPanel.respond(200, #"{"status":"partial","data":{"message":"Chunk 0 received"}}"#)
+        StubPanel.respond(200, #"{"status":"partial","data":{"message":"Chunk 1 received"}}"#)
+        StubPanel.respond(200, #"{"status":"completed","data":{"message":"File uploaded successfully"}}"#)
+        let progress = ProgressLog()
+        try await live().uploadFile(serverID: Self.serverID, folder: "plugins", name: "Essentials.jar", from: file) {
+            progress.append($0)
+        }
+
+        let requests = StubPanel.requests
+        XCTAssertEqual(requests.count, 4)
+        XCTAssertTrue(requests.allSatisfy { $0.line == "POST /api/v2/servers/\(Self.serverID)/files/upload" })
+        let data = try Data(contentsOf: file)
+        let fileIDs = Set(requests.compactMap { $0.header("fileId") })
+        XCTAssertEqual(fileIDs.count, 1, "one fileId for the whole upload")
+        for request in requests {
+            XCTAssertEqual(request.header("fileName"), "Essentials.jar")
+            XCTAssertEqual(request.header("location"), "plugins")
+            XCTAssertEqual(request.header("fileSize"), "\(data.count)")
+            XCTAssertEqual(request.header("totalChunks"), "3")
+            XCTAssertEqual(request.header("chunked"), "true")
+        }
+        XCTAssertNil(requests[0].header("chunkId"), "the announcement carries no chunk")
+        XCTAssertTrue(requests[0].body?.isEmpty ?? true)
+        for index in 0..<3 {
+            let request = requests[index + 1]
+            let start = index * FileUpload.chunkBytes
+            let expected = data[start..<min(start + FileUpload.chunkBytes, data.count)]
+            XCTAssertEqual(request.header("chunkId"), "\(index)")
+            XCTAssertEqual(request.body, Data(expected))
+            XCTAssertEqual(request.header("chunkHash"), SHA256.hash(data: expected).map { String(format: "%02x", $0) }.joined())
+        }
+        XCTAssertEqual(progress.values.last ?? 0, 1, accuracy: 0.0001)
+    }
+
+    func testPanelErrorsAreShown() async throws {
+        StubPanel.respond(400, #"{"status":"error","error":"NOT_AUTHORIZED","data":{"message":"Insufficient permissions"}}"#)
+        do {
+            try await live().uploadFile(serverID: Self.serverID, folder: "", name: "a.jar", from: file) { _ in }
+            XCTFail("expected an error")
+        } catch {
+            XCTAssertEqual(error.panelProblem, .permissionDenied)
+        }
+        StubPanel.reset()
+        StubPanel.respond(200, #"{"status":"ok","data":{"file-id":"x"}}"#)
+        StubPanel.respond(507, #"{"status":"error","error":"NO STORAGE SPACE","data":{"message":"Out Of Space!"}}"#)
+        do {
+            try await live().uploadFile(serverID: Self.serverID, folder: "", name: "a.jar", from: file) { _ in }
+            XCTFail("expected an error")
+        } catch CraftyError.server(let code, let detail) {
+            XCTAssertEqual(code, "NO STORAGE SPACE")
+            XCTAssertEqual(detail, "Out Of Space!")
+        }
+    }
+
+    func testRefusedLocationFromCrafty47IsShown() async throws {
+        // 4.7.0 answers a traversal in `location` with 500 and the reason in `error_data`.
+        StubPanel.respond(500, #"{"status":"error","error":"TRAVERSAL_DETECTED","error_data":"Attempted traversal detected. Requested upload must go to server directory"}"#)
+        do {
+            try await live().uploadFile(serverID: Self.serverID, folder: "", name: "a.jar", from: file) { _ in }
+            XCTFail("expected an error")
+        } catch CraftyError.server(let code, let detail) {
+            XCTAssertEqual(code, "TRAVERSAL_DETECTED")
+            XCTAssertEqual(detail?.hasPrefix("Attempted traversal"), true)
+        }
+    }
+
+    func testUnfinishedUploadIsReported() async throws {
+        StubPanel.respond(200, #"{"status":"ok","data":{"file-id":"x"}}"#)
+        StubPanel.respond(200, #"{"status":"partial","data":{"message":"Chunk received"}}"#)
+        do {
+            try await live().uploadFile(serverID: Self.serverID, folder: "", name: "a.jar", from: file) { _ in }
+            XCTFail("the panel never said completed")
+        } catch CraftyError.server(let code, _) {
+            XCTAssertEqual(code, "UPLOAD_INCOMPLETE")
+        }
+    }
+
+    func testRefusedFileNeverReachesThePanel() async throws {
+        do {
+            try await live().uploadFile(serverID: Self.serverID, folder: "", name: "../a.jar", from: file) { _ in }
+            XCTFail("expected an error")
+        } catch CraftyError.invalidName {}
+        XCTAssertTrue(StubPanel.requests.isEmpty)
+    }
+
+    func testMockListsUploadedFile() async throws {
+        let mock = MockCraftyService(latency: .zero)
+        let id = MockData.servers[0].id
+        try await mock.uploadFile(serverID: id, folder: "plugins", name: "Essentials.jar", from: file) { _ in }
+        let entry = try await mock.listFiles(serverID: id, path: "plugins").first { $0.name == "Essentials.jar" }
+        XCTAssertEqual(entry?.path, "plugins/Essentials.jar")
+        XCTAssertEqual(entry?.size, "10.0MB")
+    }
+}
+
+private final class ProgressLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [Double] = []
+    func append(_ value: Double) { lock.withLock { stored.append(value) } }
+    var values: [Double] { lock.withLock { stored } }
 }
