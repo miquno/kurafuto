@@ -1,14 +1,18 @@
 import Foundation
 
-// MARK: - Schedules  (POST/PATCH/DELETE /api/v2/servers/{id}/tasks)
+// MARK: - Schedules  (POST /api/v2/servers/{id}/tasks, PATCH/DELETE …/tasks/{taskID})
 
-struct Schedule: Identifiable, Codable, Hashable {
+/// A panel schedule. Encodes to the body Crafty validates with `additionalProperties: false`
+/// (`tasks/index.py`), so only the keys below may be sent.
+struct Schedule: Identifiable, Encodable, Hashable {
     var id: Int
     var name: String
     var enabled: Bool
     var action: ScheduleAction
     var interval: Int
     var intervalType: IntervalType
+    /// "HH:mm" in the panel's time zone; Crafty uses it only for `days`.
+    var startTime: String = "00:00"
     var command: String?
     var parent: Int?           // Chained tasks: runs after "parent" + delay
     var oneTime: Bool
@@ -17,27 +21,44 @@ struct Schedule: Identifiable, Codable, Hashable {
     var nextRun: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id = "schedule_id"
         case name, enabled, action, interval
         case intervalType = "interval_type"
+        case startTime = "start_time"
         case command, parent
         case oneTime = "one_time"
         case cronString = "cron_string"
         case delay
-        case nextRun = "next_run"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(action, forKey: .action)
+        try c.encode(interval, forKey: .interval)
+        try c.encode(intervalType, forKey: .intervalType)
+        try c.encode(startTime, forKey: .startTime)
+        // The panel's task runner executes `command`: actions are queued as "<action>_server".
+        try c.encode(action == .command ? command : "\(action.rawValue)_server", forKey: .command)
+        try c.encode(intervalType == .reaction ? parent : nil, forKey: .parent)
+        try c.encode(oneTime, forKey: .oneTime)
+        try c.encode(intervalType == .cron ? cronString ?? "" : "", forKey: .cronString)
+        try c.encode(intervalType == .reaction ? delay : 0, forKey: .delay)
     }
 
     var summary: String {
-        if let cron = cronString, !cron.isEmpty { return "Cron: \(cron)" }
-        if parent != nil { return "After parent task (+\(delay)s)" }
-        return "Every \(interval) \(intervalType.label)"
+        switch intervalType {
+        case .cron: "Cron: \(cronString ?? "")"
+        case .reaction: "After parent task (+\(delay)s)"
+        case .days: "Every \(interval) \(intervalType.label) at \(startTime)"
+        case .minutes, .hours: "Every \(interval) \(intervalType.label)"
+        }
     }
 }
 
-enum ScheduleAction: String, Codable, CaseIterable, Identifiable {
-    case start, stop, restart, backup
-    case command = "command"
-    case customCommand = "custom_command"
+/// Values the panel's schedule form sends. Backups need a backup config (`action_id`) and arrive with the backups item.
+enum ScheduleAction: String, Encodable, CaseIterable, Identifiable {
+    case start, stop, restart, backup, command
     var id: String { rawValue }
     var label: String {
         switch self {
@@ -45,14 +66,15 @@ enum ScheduleAction: String, Codable, CaseIterable, Identifiable {
         case .stop: "Stop"
         case .restart: "Restart"
         case .backup: "Backup"
-        case .command, .customCommand: "Command"
+        case .command: "Command"
         }
     }
 }
 
-enum IntervalType: String, Codable, CaseIterable, Identifiable {
+/// `interval_type` as validated by the panel; cron schedules send an empty string.
+enum IntervalType: String, Encodable, CaseIterable, Identifiable {
     case minutes, hours, days, reaction
-    case monday, tuesday, wednesday, thursday, friday, saturday, sunday
+    case cron = ""
     var id: String { rawValue }
     var label: String {
         switch self {
@@ -60,13 +82,7 @@ enum IntervalType: String, Codable, CaseIterable, Identifiable {
         case .hours: "hours"
         case .days: "days"
         case .reaction: "reaction"
-        case .monday: "Monday"
-        case .tuesday: "Tuesday"
-        case .wednesday: "Wednesday"
-        case .thursday: "Thursday"
-        case .friday: "Friday"
-        case .saturday: "Saturday"
-        case .sunday: "Sunday"
+        case .cron: "cron"
         }
     }
 }

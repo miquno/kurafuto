@@ -203,7 +203,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     }
 
     // MARK: Schedules
-    func schedules(serverID: String) async throws -> [Schedule] {
+    func schedules(serverID: String) async throws -> [Schedule]? {
         try await simulate(); return sync { schedules[serverID] ?? MockData.schedules }
     }
     func createSchedule(_ schedule: Schedule, serverID: String) async throws {

@@ -86,15 +86,15 @@ enum MockData {
 
     static let schedules: [Schedule] = [
         Schedule(id: 1, name: "Nightly restart", enabled: true, action: .restart, interval: 1, intervalType: .days,
-                 command: nil, parent: nil, oneTime: false, cronString: "0 4 * * *", delay: 0,
+                 startTime: "04:00", command: nil, parent: nil, oneTime: false, cronString: nil, delay: 0,
                  nextRun: .now.addingTimeInterval(9 * 3600)),
-        Schedule(id: 2, name: "Backup every 6h", enabled: true, action: .backup, interval: 6, intervalType: .hours,
-                 command: nil, parent: nil, oneTime: false, cronString: nil, delay: 0,
-                 nextRun: .now.addingTimeInterval(95 * 60)),
-        Schedule(id: 3, name: "Restart warning", enabled: true, action: .customCommand, interval: 1, intervalType: .days,
-                 command: "say Restarting in 5 minutes!", parent: 1, oneTime: false, cronString: nil, delay: -300, nextRun: nil),
-        Schedule(id: 4, name: "Weekend event", enabled: false, action: .customCommand, interval: 1, intervalType: .saturday,
-                 command: "say Double XP is active!", parent: nil, oneTime: false, cronString: nil, delay: 0, nextRun: nil),
+        Schedule(id: 2, name: "Hourly save", enabled: true, action: .command, interval: 1, intervalType: .hours,
+                 command: "save-all", parent: nil, oneTime: false, cronString: nil, delay: 0,
+                 nextRun: .now.addingTimeInterval(35 * 60)),
+        Schedule(id: 3, name: "Welcome back", enabled: true, action: .command, interval: 0, intervalType: .reaction,
+                 command: "say The server is back!", parent: 1, oneTime: false, cronString: nil, delay: 120, nextRun: nil),
+        Schedule(id: 4, name: "Weekend event", enabled: false, action: .command, interval: 0, intervalType: .cron,
+                 command: "say Double XP is active!", parent: nil, oneTime: false, cronString: "0 18 * * 6", delay: 0, nextRun: nil),
     ]
 
     static let backupConfigs: [BackupConfig] = [
