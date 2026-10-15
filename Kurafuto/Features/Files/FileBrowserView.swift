@@ -178,6 +178,20 @@ private extension View {
     }
 }
 
+/// Saves send the modification time the file was read with; when the file changed on the panel since,
+/// the user chooses between overwriting it and reloading it.
+private extension View {
+    func fileChangedAlert(isPresented: Binding<Bool>, overwrite: @escaping () -> Void, reload: @escaping () -> Void) -> some View {
+        alert("File Changed on the Panel", isPresented: isPresented) {
+            Button("Overwrite", role: .destructive, action: overwrite)
+            Button("Reload", action: reload)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Someone changed this file after you opened it. Overwrite their changes with yours, or reload and lose your edits?")
+        }
+    }
+}
+
 struct TextFileEditor: View {
     @Environment(AppState.self) private var app
     let server: Server
