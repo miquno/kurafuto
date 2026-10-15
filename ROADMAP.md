@@ -24,7 +24,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 - [x] CI: `build-and-test` and `DCO` with read-only permissions and SHA-pinned actions.
 - [x] First green build in Xcode and CI; fix compiler errors from the uncompiled scaffold.
 - [x] Static, tracking-free website with privacy policy for getkurafuto.app (ADR 0006).
-- [ ] Repository settings applied: ruleset for `main`, secret scanning with push protection, private vulnerability reporting, Pages with custom domain (see `.github/AGENTS.md`).
+- [x] Repository settings applied: ruleset for `main`, secret scanning with push protection, private vulnerability reporting, Pages with custom domain (see `.github/AGENTS.md`).
 
 **Acceptance criteria:** `xcodebuild test` passes locally and in CI; the demo mode works end to end.
 
@@ -34,7 +34,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 
 - [x] Verify sign-in, server list, stats, actions, stdin and logs against Crafty 4.7+; record the minimum supported version (4.7.0; see `docs/api/crafty-api-v2.md`).
 - [x] Hide UI that the signed-in user has no permission for (`/api/v2/users/{id}/permissions`).
-- [ ] Live console over the panel WebSocket (port from `websocket_handler.py`), polling as fallback.
+- [x] Live console over the panel WebSocket (port from `websocket_handler.py`), polling as fallback.
 - [x] Face ID lock (app launch and before destructive actions).
 - [ ] Error states for offline panel, expired token and permission denied.
 

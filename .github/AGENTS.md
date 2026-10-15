@@ -25,7 +25,7 @@ These are not in code; keep this list in sync with the live settings.
 - Squash merge as the only merge method; delete branches after merge.
 - Secret scanning and push protection enabled; private vulnerability reporting enabled; Dependabot **alerts** enabled, automatic pull requests disabled.
 - Actions: default `GITHUB_TOKEN` read-only; workflows may not create or approve pull requests.
-- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the account's Pages settings. Pending: the custom domain is not set until DNS resolves.
+- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the account's Pages settings. The domain is verified for the account (protects it from takeover); the certificate covers `getkurafuto.app` and `www.getkurafuto.app`, but only the apex has DNS records.
 - Code-owner review not required while there is a single maintainer.
 
 ## Gotchas

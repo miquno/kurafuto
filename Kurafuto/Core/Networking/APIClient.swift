@@ -87,6 +87,23 @@ final class APIClient: NSObject, @unchecked Sendable {
         throw CraftyError.decoding(URLError(.cannotParseResponse))
     }
 
+    /// WebSocket on the same pinned, ephemeral session. Crafty reads the token only from the `token`
+    /// cookie here, so it travels in a header and never in the URL.
+    func webSocket(_ path: String, query: [URLQueryItem]) throws -> URLSessionWebSocketTask {
+        guard var comps = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
+            throw CraftyError.invalidURL
+        }
+        comps.scheme = comps.scheme == "http" ? "ws" : "wss"
+        comps.percentEncodedQueryItems = query.map {
+            URLQueryItem(name: $0.name, value: $0.value?.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
+        }
+        guard let url = comps.url else { throw CraftyError.invalidURL }
+        var req = URLRequest(url: url, timeoutInterval: 20)
+        req.httpShouldHandleCookies = false
+        if let token { req.setValue("token=\(token)", forHTTPHeaderField: "Cookie") }
+        return session.webSocketTask(with: req)
+    }
+
     /// For `/metrics/*` (OpenMetrics text, no JSON envelope).
     func rawText(_ path: String) async throws -> String {
         var req = URLRequest(url: baseURL.appending(path: path))
