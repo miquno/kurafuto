@@ -29,7 +29,8 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     /// What `panelAccess()` reports; the demo signs in as a superuser.
     var grantedAccess: PanelAccess
 
-    init(latency: Duration = .milliseconds(350), failureRate: Double = 0, access: PanelAccess = .superuser) {
+    init(latency: Duration = .milliseconds(350), failureRate: Double = 0,
+         access: PanelAccess = PanelAccess(isSuperuser: true, permissions: CraftyPermissions(mask: "000"), userID: 1)) {
         self.latency = latency
         self.failureRate = failureRate
         self.grantedAccess = access
@@ -396,11 +397,17 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     // MARK: Users & roles
     func panelAccess() async throws -> PanelAccess { try await simulate(); return sync { grantedAccess } }
     func users() async throws -> [CraftyUser] { try await simulate(); return sync { users } }
-    func saveUser(_ user: CraftyUser, password: String?) async throws {
+    func saveUser(id: Int, changes: UserChanges) async throws {
         try await simulate()
         sync {
-            if let i = users.firstIndex(where: { $0.id == user.id }) { users[i] = user }
-            else { var u = user; u.userID = (users.map(\.userID).max() ?? 0) + 1; users.append(u) }
+            var user = users.first { $0.id == id } ?? CraftyUser.new()
+            if user.userID == 0 { user.userID = (users.map(\.userID).max() ?? 0) + 1 }
+            if let v = changes.username { user.username = v }
+            if let v = changes.enabled { user.enabled = v }
+            if let v = changes.superuser { user.superuser = v }
+            if let v = changes.lang { user.lang = v }
+            if let v = changes.roles { user.roleIDs = v }
+            if let i = users.firstIndex(where: { $0.id == user.id }) { users[i] = user } else { users.append(user) }
         }
     }
     func deleteUser(id: Int) async throws { try await simulate(); sync { users.removeAll { $0.id == id } } }
@@ -408,8 +415,15 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     func saveRole(_ role: Role) async throws {
         try await simulate()
         sync {
-            if let i = roles.firstIndex(where: { $0.id == role.id }) { roles[i] = role }
-            else { var r = role; r.roleID = (roles.map(\.roleID).max() ?? 0) + 1; roles.append(r) }
+            var r = role
+            if let i = roles.firstIndex(where: { $0.id == role.id }) {
+                r.servers = role.servers ?? roles[i].servers
+                roles[i] = r
+            } else {
+                r.roleID = (roles.map(\.roleID).max() ?? 0) + 1
+                r.servers = role.servers ?? []
+                roles.append(r)
+            }
         }
     }
     func deleteRole(id: Int) async throws { try await simulate(); sync { roles.removeAll { $0.id == id } } }
