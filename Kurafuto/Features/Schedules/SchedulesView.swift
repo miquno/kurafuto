@@ -97,7 +97,7 @@ struct SchedulesView: View {
             Button("New Schedule") { editing = Self.newSchedule }
                 .buttonStyle(InstrumentButtonStyle()).frame(width: 200)
             if let url = webPanelURL {
-                Link("Open Web Panel", destination: url).font(.subheadline)
+                Link("Open Web Panel", destination: url).font(.subheadline).tint(Theme.accent)
             }
         }
         .themedBackground()
