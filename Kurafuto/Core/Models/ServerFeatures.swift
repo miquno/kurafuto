@@ -214,57 +214,172 @@ struct BackupFile: Identifiable, Hashable {
 
 // MARK: - Webhooks (/api/v2/servers/{id}/webhook)
 
-struct Webhook: Identifiable, Codable, Hashable {
+/// A webhook as the panel stores it. The panel sends it, not the app: Kurafuto only edits the entry.
+struct Webhook: Identifiable, Hashable {
+    /// 0 for a webhook that is not saved yet.
     var id: Int
-    var webhookType: WebhookType
+    /// One of `providers` on a valid webhook; older rows may carry other names.
+    var type: String
     var name: String
     var url: String
     var botName: String
-    var triggers: [WebhookTrigger]
+    /// Trigger names in panel order; unknown ones are kept so a save does not drop them.
+    var triggers: [String]
+    /// Jinja2 template, e.g. `{{ server_name }}`.
     var body: String
+    /// `#rrggbb`; Discord shows it as the embed color.
+    var color: String
     var enabled: Bool
 
-    enum CodingKeys: String, CodingKey {
-        case id = "webhook_id"
-        case webhookType = "webhook_type"
-        case name, url
-        case botName = "bot_name"
-        case triggers = "trigger"
-        case body, enabled
+    /// `WebhookFactory._registry` in 4.7.0 and 4.11.0.
+    static let providers = ["Discord", "Mattermost", "Slack", "Teams"]
+    static let defaultColor = "#005cd1"
+    /// The web panel limits both names to 30 characters.
+    static let maxNameLength = 30
+
+    static func new() -> Webhook {
+        Webhook(id: 0, type: "Discord", name: "", url: "", botName: "Crafty Controller",
+                triggers: [WebhookTrigger.serverStart.rawValue, WebhookTrigger.serverStop.rawValue],
+                body: "{{ server_name }}: {{ event_type }}", color: defaultColor, enabled: true)
+    }
+
+    /// The panel stores `trigger` as one string with a trailing comma (`"start_server,stop_server,"`).
+    static func triggers(fromPanel text: String) -> [String] {
+        text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+
+    /// Why the panel would refuse this webhook, or nil when it can be saved.
+    var problem: String? {
+        let name = name.trimmingCharacters(in: .whitespaces), bot = botName.trimmingCharacters(in: .whitespaces)
+        if name.isEmpty || name.count > Self.maxNameLength { return "Enter a name of up to 30 characters." }
+        if !Self.providers.contains(type) { return "Choose a service." }
+        if !WebhookURL.isValid(url) { return "Enter an http:// or https:// address with a host name or IP address." }
+        if bot.isEmpty || bot.count > Self.maxNameLength { return "Enter a bot name of up to 30 characters." }
+        if !Self.isValidColor(color) { return "Choose a color." }
+        return nil
+    }
+
+    static func isValidColor(_ text: String) -> Bool {
+        text.count == 7 && text.first == "#" && text.dropFirst().allSatisfy(\.isHexDigit)
     }
 }
 
-enum WebhookType: String, Codable, CaseIterable, Identifiable {
-    case discord = "Discord"
-    case slack = "Slack"
-    case teams = "Teams"
-    case mattermost = "Mattermost"
-    case custom = "Custom"
-    var id: String { rawValue }
+/// One entry of `GET …/webhook`, an object keyed by webhook id. Only the fields the app needs, decoded leniently.
+struct WebhookRow: Decodable {
+    let type: String
+    let name: String
+    let url: String
+    let botName: String
+    let trigger: String
+    let body: String
+    let color: String
+    let enabled: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case type = "webhook_type", name, url, botName = "bot_name", trigger, body, color, enabled
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        type = (try? c.decode(String.self, forKey: .type)) ?? ""
+        name = (try? c.decode(String.self, forKey: .name)) ?? ""
+        url = (try? c.decode(String.self, forKey: .url)) ?? ""
+        botName = (try? c.decode(String.self, forKey: .botName)) ?? ""
+        trigger = (try? c.decode(String.self, forKey: .trigger)) ?? ""
+        body = (try? c.decode(String.self, forKey: .body)) ?? ""
+        let color = (try? c.decode(String.self, forKey: .color)) ?? ""
+        self.color = Webhook.isValidColor(color) ? color : Webhook.defaultColor
+        enabled = (try? c.decode(Bool.self, forKey: .enabled)) ?? ((try? c.decode(Int.self, forKey: .enabled)) ?? 0 != 0)
+    }
+
+    /// Sorted by id; keys that are not positive numbers are dropped.
+    static func list(_ rows: [String: WebhookRow]) -> [Webhook] {
+        rows.compactMap { key, row in
+            guard let id = Int(key), id > 0 else { return nil }
+            return Webhook(id: id, type: row.type, name: row.name, url: row.url, botName: row.botName,
+                           triggers: Webhook.triggers(fromPanel: row.trigger), body: row.body, color: row.color,
+                           enabled: row.enabled)
+        }
+        .sorted { $0.id < $1.id }
+    }
 }
 
-enum WebhookTrigger: String, Codable, CaseIterable, Identifiable {
+/// Body for `POST …/webhook` and `PATCH …/webhook/{id}`. Validated with `additionalProperties: false`, so the
+/// id never goes along; `color` is required on create although the schema has a default (500 without it).
+struct WebhookBody: Encodable {
+    let webhook: Webhook
+
+    enum CodingKeys: String, CodingKey {
+        case type = "webhook_type", name, url, botName = "bot_name", trigger, body, color, enabled
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(webhook.type, forKey: .type)
+        try c.encode(webhook.name.trimmingCharacters(in: .whitespaces), forKey: .name)
+        try c.encode(webhook.url.trimmingCharacters(in: .whitespaces), forKey: .url)
+        try c.encode(webhook.botName.trimmingCharacters(in: .whitespaces), forKey: .botName)
+        try c.encode(webhook.triggers, forKey: .trigger)
+        try c.encode(webhook.body, forKey: .body)
+        try c.encode(webhook.color, forKey: .color)
+        try c.encode(webhook.enabled, forKey: .enabled)
+    }
+}
+
+/// Webhook targets. Mirrors the URL pattern Crafty 4.11 enforces (4.7 checks nothing), but requires the
+/// scheme, because the panel cannot send to an address without one. Plain `http://` is allowed: the panel,
+/// not the app, connects to it, and self-hosted chat servers on a LAN often have no certificate.
+enum WebhookURL {
+    private static let pattern = #"^https?://"#
+        + #"((([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})"#
+        + #"|(((25[0-5]|(2[0-4]|1\d|[1-9])?\d)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9])?\d))"#
+        + #"|(\[[a-fA-F0-9:]+\]))"#
+        + #"(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3}))?"#
+        + #"(/\S*)?$"#
+
+    static func isValid(_ text: String) -> Bool {
+        let text = text.trimmingCharacters(in: .whitespaces)
+        return text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+}
+
+/// `WebhookFactory.get_monitored_events()` in 4.7.0 and 4.11.0.
+enum WebhookTrigger: String, CaseIterable, Identifiable {
     case serverStart = "start_server"
     case serverStop = "stop_server"
-    case serverRestart = "restart_server"
-    case serverCrash = "server_crash"
-    case backupServer = "backup_server"
+    case crash = "crash_detected"
+    case backup = "backup_server"
     case jarUpdate = "jar_update"
-    case sendCommand = "send_command"
+    case command = "send_command"
     case kill = "kill"
     var id: String { rawValue }
+
     var label: String {
         switch self {
         case .serverStart: "Server started"
         case .serverStop: "Server stopped"
-        case .serverRestart: "Restart"
-        case .serverCrash: "Crash"
-        case .backupServer: "Backup"
-        case .jarUpdate: "JAR update"
-        case .sendCommand: "Command sent"
-        case .kill: "Kill"
+        case .crash: "Crash detected"
+        case .backup: "Backup"
+        case .jarUpdate: "Server JAR updated"
+        case .command: "Command sent"
+        case .kill: "Server killed"
         }
     }
+
+    /// Template variables the panel fills in for this event, besides the common ones.
+    var extraVariables: [String] {
+        switch self {
+        case .backup: ["backup_name", "backup_link", "backup_size", "backup_status", "backup_error"]
+        case .command: ["command"]
+        case .kill: ["reason"]
+        default: []
+        }
+    }
+
+    static let commonVariables = ["server_name", "server_id", "event_type", "source_type", "source_name", "time_formatted"]
+
+    /// Label for a stored trigger name, also for names this app version does not know.
+    static func label(for name: String) -> String { WebhookTrigger(rawValue: name)?.label ?? name }
 }
 
 // MARK: - Files

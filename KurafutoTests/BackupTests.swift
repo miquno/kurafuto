@@ -203,6 +203,7 @@ final class StubPanel: URLProtocol {
     struct Recorded {
         let line: String
         let json: [String: Any]?
+        var query: String? = nil
     }
 
     nonisolated(unsafe) static var requests: [Recorded] = []
@@ -219,7 +220,8 @@ final class StubPanel: URLProtocol {
         let body = request.httpBody ?? request.httpBodyStream.map(Self.read)
         let json = body.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
         let (status, text) = Self.lock.withLock {
-            Self.requests.append(Recorded(line: "\(request.httpMethod ?? "?") \(request.url?.path ?? "")", json: json))
+            Self.requests.append(Recorded(line: "\(request.httpMethod ?? "?") \(request.url?.path ?? "")", json: json,
+                                          query: request.url?.query))
             return Self.responses.count > 1 ? Self.responses.removeFirst() : Self.responses.first ?? (500, "")
         }
         guard let url = request.url, let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil,

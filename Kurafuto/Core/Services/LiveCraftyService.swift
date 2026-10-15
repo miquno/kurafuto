@@ -89,11 +89,13 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
                                                        query: [URLQueryItem(name: "file", value: fromFile ? "true" : "false")])
         return lines.map(\.unescapingCraftyLogHTML)
     }
-    func updateServer(_ server: Server) async throws {
-        let _: Empty = try await client.request(.patch, "/api/v2/servers/\(server.id)", body: .json(server))
+    func updateServer(id: String, changes: ServerConfigPatch) async throws {
+        guard !changes.isEmpty else { return }
+        let _: Empty = try await client.request(.patch, "/api/v2/servers/\(id)", body: .json(changes))
     }
-    func deleteServer(id: String) async throws {
-        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(id)")
+    func deleteServer(id: String, deleteFiles: Bool) async throws {
+        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(id)",
+                                                query: deleteFiles ? [URLQueryItem(name: "files", value: "true")] : [])
     }
     func createServer(_ request: CreateServerRequest) async throws -> String {
         struct Res: Decodable { let new_server_id: String }
@@ -250,21 +252,24 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         throw CraftyError.notSupportedByPanelVersion("Deleting files")
     }
 
-    // MARK: Webhooks ✅
+    // MARK: Webhooks ✅ (the spec's singular `/server/{id}/webhook/{wid}` does not exist; the panel routes `/servers/`)
     func webhooks(serverID: String) async throws -> [Webhook] {
-        let dict: [String: Webhook] = try await client.request(.get, "/api/v2/servers/\(serverID)/webhook")
-        return dict.values.sorted { $0.id < $1.id }
+        let rows: [String: WebhookRow] = try await client.request(.get, "/api/v2/servers/\(serverID)/webhook")
+        return WebhookRow.list(rows)
     }
     func saveWebhook(_ webhook: Webhook, serverID: String) async throws {
         if webhook.id == 0 {
-            let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/webhook", body: .json(webhook))
+            let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/webhook", body: .json(WebhookBody(webhook: webhook)))
         } else {
-            // Note: the spec uses /server/ (singular) here
-            let _: Empty = try await client.request(.patch, "/api/v2/server/\(serverID)/webhook/\(webhook.id)", body: .json(webhook))
+            let _: Empty = try await client.request(.patch, "/api/v2/servers/\(serverID)/webhook/\(webhook.id)",
+                                                    body: .json(WebhookBody(webhook: webhook)))
         }
     }
     func deleteWebhook(id: Int, serverID: String) async throws {
-        let _: Empty = try await client.request(.delete, "/api/v2/server/\(serverID)/webhook/\(id)")
+        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/webhook/\(id)")
+    }
+    func testWebhook(id: Int, serverID: String) async throws {
+        let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/webhook/\(id)")
     }
 
     // MARK: Users & roles ✅

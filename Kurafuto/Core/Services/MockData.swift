@@ -14,7 +14,8 @@ enum MockData {
                executionCommand: "java -Xms2G -Xmx4G -jar \(jar) nogui",
                autoStart: true, autoStartDelay: 10, crashDetection: true, stopCommand: "stop",
                executableUpdateURL: nil, serverIP: "127.0.0.1", serverPort: port,
-               logsDeleteAfter: 7, type: type)
+               logsDeleteAfter: 7, type: type, shutdownTimeout: 60, ignoredExits: "0", countPlayers: true,
+               showStatus: true)
     }
 
     static let servers: [Server] = [
@@ -154,11 +155,12 @@ enum MockData {
     """
 
     static let webhooks: [Webhook] = [
-        Webhook(id: 1, webhookType: .discord, name: "Discord #server-status", url: "https://discord.com/api/webhooks/…",
-                botName: "Server Bot", triggers: [.serverStart, .serverStop, .serverCrash],
-                body: "Server {server_name} triggered {event_type}", enabled: true),
-        Webhook(id: 2, webhookType: .discord, name: "Backup log", url: "https://discord.com/api/webhooks/…",
-                botName: "Backup", triggers: [.backupServer], body: "Backup finished", enabled: false),
+        Webhook(id: 1, type: "Discord", name: "Discord #server-status", url: "https://discord.com/api/webhooks/1/example",
+                botName: "Server Bot", triggers: ["start_server", "stop_server", "crash_detected"],
+                body: "{{ server_name }}: {{ event_type }}", color: "#5865f2", enabled: true),
+        Webhook(id: 2, type: "Mattermost", name: "Backup log", url: "http://chat.home.example:8065/hooks/example",
+                botName: "Backup", triggers: ["backup_server"],
+                body: "Backup {{ backup_name }} ({{ backup_size }}) {{ backup_status }}", color: "#005cd1", enabled: false),
     ]
 
     static let users: [CraftyUser] = [

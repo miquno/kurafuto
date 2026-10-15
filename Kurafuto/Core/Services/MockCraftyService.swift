@@ -179,12 +179,12 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
         }
     }
 
-    func updateServer(_ server: Server) async throws {
+    func updateServer(id: String, changes: ServerConfigPatch) async throws {
         try await simulate()
-        sync { if let i = servers.firstIndex(where: { $0.id == server.id }) { servers[i] = server } }
+        sync { if let i = servers.firstIndex(where: { $0.id == id }) { servers[i] = changes.applied(to: servers[i]) } }
     }
 
-    func deleteServer(id: String) async throws {
+    func deleteServer(id: String, deleteFiles: Bool) async throws {
         try await simulate()
         sync { servers.removeAll { $0.id == id }; stats[id] = nil }
     }
@@ -326,6 +326,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
         try await simulate()
         sync { var l = webhooks[serverID] ?? MockData.webhooks; l.removeAll { $0.id == id }; webhooks[serverID] = l }
     }
+    func testWebhook(id: Int, serverID: String) async throws { try await simulate() }
 
     // MARK: Users & roles
     func panelAccess() async throws -> PanelAccess { try await simulate(); return sync { grantedAccess } }
