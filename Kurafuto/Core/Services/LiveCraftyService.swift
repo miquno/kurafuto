@@ -233,21 +233,42 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         return "/api/v2/servers/\(serverID)/backups/backup/\(configID)"
     }
 
-    // MARK: Files ⚠️ (new file endpoints since panel 4.7, e.g. files/copy, files/move)
+    // MARK: Files ✅ (routes from the panel source, verified on 4.7.0 and 4.11.0)
+    // Never copy/move: those had a path traversal in 4.7.0 (issue #660).
     func listFiles(serverID: String, path: String) async throws -> [FileEntry] {
-        throw CraftyError.notSupportedByPanelVersion("File manager – endpoints not verified yet")
+        let listing: FolderListing = try await client.request(.post, "/api/v2/servers/\(serverID)/files",
+                                                              body: .json(["path": path]))
+        return listing.entries
     }
-    func readFile(serverID: String, path: String) async throws -> String {
-        throw CraftyError.notSupportedByPanelVersion("Reading files")
+    func readFile(serverID: String, path: String) async throws -> PanelFile {
+        try await client.request(.post, "/api/v2/servers/\(serverID)/files", body: .json(["path": path]))
     }
-    func writeFile(serverID: String, path: String, content: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Saving files")
+    func writeFile(serverID: String, path: String, content: String, modifiedEpoch: Double, overwrite: Bool) async throws -> Double {
+        struct Body: Encodable {
+            let path: String, contents: String, modified_epoch: Double, overwrite: Bool
+        }
+        struct Res: Decodable {
+            struct Attributes: Decodable { let modified_epoch: Double }
+            let attributes: Attributes
+        }
+        do {
+            let res: Res = try await client.request(.patch, "/api/v2/servers/\(serverID)/files",
+                                                    body: .json(Body(path: path, contents: content, modified_epoch: modifiedEpoch,
+                                                                     overwrite: overwrite)))
+            return res.attributes.modified_epoch
+        } catch CraftyError.server(code: "409", _) {
+            throw CraftyError.fileChanged
+        }
     }
-    func createFolder(serverID: String, path: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Creating folders")
+    func createFolder(serverID: String, parent: String, name: String) async throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        struct Body: Encodable { let parent: String, name: String, directory: Bool }
+        let _: Empty = try await client.request(.put, "/api/v2/servers/\(serverID)/files/create",
+                                                body: .json(Body(parent: parent, name: name, directory: true)))
     }
     func deleteFile(serverID: String, path: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Deleting files")
+        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/files",
+                                                body: .json(["file_system_objects": [["filename": path]]]))
     }
 
     // MARK: Webhooks ✅
