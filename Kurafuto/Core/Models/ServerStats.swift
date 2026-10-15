@@ -7,6 +7,8 @@ struct ServerStats: Codable, Hashable {
     var started: String?
     var cpu: Double
     var mem: String
+    /// Memory in bytes, when the panel's value can be read as such.
+    var memBytes: Double?
     var memPercent: Double
     var worldName: String?
     var worldSize: String?
@@ -40,6 +42,7 @@ struct ServerStats: Codable, Hashable {
          version: String? = nil, updating: Bool = false, waitingStart: Bool = false,
          firstRun: Bool = false, crashed: Bool = false) {
         self.running = running; self.started = started; self.cpu = cpu; self.mem = mem
+        self.memBytes = ByteSize.bytes(fromPanelText: mem)
         self.memPercent = memPercent; self.worldName = worldName; self.worldSize = worldSize
         self.serverPort = serverPort; self.online = online; self.max = max; self.players = players
         self.desc = desc; self.icon = icon; self.version = version; self.updating = updating
@@ -54,10 +57,13 @@ struct ServerStats: Codable, Hashable {
         // Crafty 4.7 sends a preformatted string ("1.4GB"), 4.11 a byte count. Accept both.
         if let s = try? c.decode(String.self, forKey: .mem) {
             mem = s
+            memBytes = ByteSize.bytes(fromPanelText: s)
         } else if let bytes = try? c.decode(Double.self, forKey: .mem), bytes > 0 {
             mem = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory)
+            memBytes = bytes
         } else {
             mem = "0MB"
+            memBytes = 0
         }
         memPercent = c.lenientDouble(.memPercent)
         worldName = c.lenientString(.worldName)
@@ -89,6 +95,63 @@ struct ServerStats: Codable, Hashable {
         if updating { return .updating }
         if waitingStart { return .starting }
         return running ? .online : .offline
+    }
+}
+
+extension ServerStats {
+    /// Crafty reports `started` as "yyyy-MM-dd HH:mm:ss" in UTC (unlike `created`, which is panel-local).
+    static func startTime(_ raw: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f.date(from: raw)
+    }
+}
+
+/// One point of a server's CPU/RAM history.
+struct StatSample: Identifiable, Hashable {
+    var id: Date { date }
+    let date: Date
+    let cpu: Double
+    let memBytes: Double
+}
+
+/// A row of `GET /api/v2/servers/{id}/history`: the panel's stats of the last hour (recorded every 30 s by
+/// default), each with `created` in panel-local time and, wastefully, the whole server row.
+struct StatsHistoryRow: Decodable {
+    let sample: StatSample?
+
+    enum CodingKeys: String, CodingKey { case created }
+
+    init(from decoder: Decoder) throws {
+        let created = try? decoder.container(keyedBy: CodingKeys.self).decode(String.self, forKey: .created)
+        let stats = try ServerStats(from: decoder)
+        guard let created, let date = Self.date(created) else { sample = nil; return }
+        sample = StatSample(date: date, cpu: stats.running ? stats.cpu : 0, memBytes: stats.running ? stats.memBytes ?? 0 : 0)
+    }
+
+    /// ISO 8601 without zone, with or without fractional seconds.
+    static func date(_ raw: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return f.date(from: String(raw.prefix(19)))
+    }
+}
+
+/// Sizes as the panel formats them: a number and B, KB, MB, GB or TB (1024-based), e.g. "1.4GB" or " 640MB".
+enum ByteSize {
+    static func bytes(fromPanelText text: String) -> Double? {
+        var t = text.trimmingCharacters(in: .whitespaces).uppercased()
+        guard t.hasSuffix("B") else { return Double(t) }
+        t.removeLast()
+        var factor = 1.0
+        if let unit = t.last, let power = ["K", "M", "G", "T"].firstIndex(of: String(unit)) {
+            factor = pow(1024, Double(power + 1))
+            t.removeLast()
+        }
+        return Double(t.trimmingCharacters(in: .whitespaces)).map { $0 * factor }
     }
 }
 

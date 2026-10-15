@@ -175,10 +175,10 @@ struct MainTabView: View {
             DashboardView()
                 .tabItem { Label("Servers", systemImage: "server.rack") }
             PanelOverviewView()
-                .tabItem { Label("Panel", systemImage: "gauge.with.dots.needle.50percent") }
+                .tabItem { Label("Panel", systemImage: "square.grid.2x2.fill") }
             if app.showsAdmin {
                 AdminView()
-                    .tabItem { Label("Admin", systemImage: "person.2.badge.gearshape") }
+                    .tabItem { Label("Admin", systemImage: "shield.lefthalf.filled") }
             }
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }

@@ -12,6 +12,8 @@ protocol CraftyService: AnyObject, Sendable {
     func servers() async throws -> [Server]
     func server(id: String) async throws -> Server
     func stats(serverID: String) async throws -> ServerStats
+    /// CPU and RAM of the last hour, oldest first.
+    func statsHistory(serverID: String) async throws -> [StatSample]
     /// Throws `CraftyError.eulaRequired` when the panel refuses to start a Java server without an accepted EULA.
     func send(_ action: ServerAction, serverID: String) async throws
     /// Accepts the Minecraft EULA for a server; the panel starts the server right after.

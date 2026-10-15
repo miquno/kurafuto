@@ -39,6 +39,11 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     func servers() async throws -> [Server] { try await client.request(.get, "/api/v2/servers") }
     func server(id: String) async throws -> Server { try await client.request(.get, "/api/v2/servers/\(id)") }
     func stats(serverID: String) async throws -> ServerStats { try await client.request(.get, "/api/v2/servers/\(serverID)/stats") }
+    /// ⚠️ Not in the spec; route from the panel source (`history.py`), verified on 4.7.0 and 4.11.0.
+    func statsHistory(serverID: String) async throws -> [StatSample] {
+        let rows: [StatsHistoryRow] = try await client.request(.get, "/api/v2/servers/\(serverID)/history")
+        return rows.compactMap(\.sample).sorted { $0.date < $1.date }
+    }
 
     func send(_ action: ServerAction, serverID: String) async throws {
         // Without a config id, 4.7.0 answers ok but the backup fails inside the panel.
