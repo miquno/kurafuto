@@ -238,6 +238,7 @@ struct CreateServerRequest: Encodable {
                     "mem_min": AnyEncodable(memMinGB),
                     "mem_max": AnyEncodable(memMaxGB),
                     "server_properties_port": AnyEncodable(port),
+                    "agree_to_eula": AnyEncodable(agreeToEULA),
                 ]),
             ], forKey: "minecraft_java_create_data")
         case .bedrock:

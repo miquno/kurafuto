@@ -32,9 +32,15 @@ struct CreateServerView: View {
                             Stepper("Max RAM: \(req.memMaxGB) GB", value: $req.memMaxGB, in: req.memMinGB...64)
                             TextField("Port", value: $req.port, format: .number.grouping(.never)).keyboardType(.numberPad)
                         }
-                    } else {
+                    }
+
+                    Section {
                         Toggle(isOn: $req.agreeToEULA) {
                             Text("I accept the Minecraft EULA and the Mojang/Microsoft privacy policy")
+                        }
+                    } footer: {
+                        if req.kind == .java {
+                            Text("Java servers only start with the EULA accepted. If you leave this off, Kurafuto asks on the first start.")
                         }
                     }
 

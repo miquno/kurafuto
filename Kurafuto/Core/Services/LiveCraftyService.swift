@@ -41,7 +41,39 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     func stats(serverID: String) async throws -> ServerStats { try await client.request(.get, "/api/v2/servers/\(serverID)/stats") }
 
     func send(_ action: ServerAction, serverID: String) async throws {
+        // Crafty answers start_server with ok and reports a missing EULA only over the WebSocket, so the socket
+        // has to be connected (answered a ping) before the request goes out.
+        guard action == .start,
+              let socket = try? client.webSocket("/ws", query: CraftyConsoleFeed.socketQuery(serverID: serverID)) else {
+            let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/action/\(action.rawValue)")
+            return
+        }
+        socket.resume()
+        defer { socket.cancel(with: .goingAway, reason: nil) }
+        let connected = await Self.ping(socket)
         let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/action/\(action.rawValue)")
+        if connected, await Self.panelAsksForEULA(socket, serverID: serverID) { throw CraftyError.eulaRequired }
+    }
+    func acceptEULA(serverID: String) async throws {
+        let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/action/eula")
+    }
+
+    /// The panel's command queue polls once per second, so the EULA request arrives within about two seconds.
+    /// Console output from the server means it is starting and ends the wait early.
+    private static func panelAsksForEULA(_ socket: URLSessionWebSocketTask, serverID: String) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                while let text = try? await receive(from: socket) {
+                    if CraftyConsoleFeed.eulaRequest(fromSocketMessage: text) == serverID { return true }
+                    if !CraftyConsoleFeed.lines(fromSocketMessage: text).isEmpty { return false }
+                }
+                return false
+            }
+            group.addTask { try? await Task.sleep(for: .seconds(4)); return false }
+            let asked = await group.next() ?? false
+            group.cancelAll()
+            return asked
+        }
     }
     func sendCommand(_ command: String, serverID: String) async throws {
         // Per docs: send without the leading slash.
@@ -116,19 +148,23 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     private static func keepAlive(_ socket: URLSessionWebSocketTask) async {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(20))
-            guard !Task.isCancelled else { return }
-            let alive = await withTaskGroup(of: Bool.self) { group in
-                group.addTask {
-                    await withCheckedContinuation { done in socket.sendPing { done.resume(returning: $0 == nil) } }
-                }
-                group.addTask { try? await Task.sleep(for: .seconds(10)); return false }
-                let first = await group.next() ?? false
-                // Cancelling the socket also completes a pending ping, so the group can finish.
-                if !first { socket.cancel(with: .goingAway, reason: nil) }
-                group.cancelAll()
-                return first
+            guard !Task.isCancelled, await ping(socket) else { return }
+        }
+    }
+
+    /// True when the panel answered within the timeout. A ping is only sent after the handshake, so a pong
+    /// also means the socket is connected. On timeout the socket is cancelled.
+    private static func ping(_ socket: URLSessionWebSocketTask, timeout: Duration = .seconds(10)) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                await withCheckedContinuation { done in socket.sendPing { done.resume(returning: $0 == nil) } }
             }
-            if !alive { return }
+            group.addTask { try? await Task.sleep(for: timeout); return false }
+            let first = await group.next() ?? false
+            // Cancelling the socket also completes a pending ping, so the group can finish.
+            if !first { socket.cancel(with: .goingAway, reason: nil) }
+            group.cancelAll()
+            return first
         }
     }
 

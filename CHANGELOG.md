@@ -18,4 +18,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - New "Instrument" design on every screen: dark, gray and light modes, and your own accent color for the app, CPU, RAM, players and storage (Settings → Appearance).
 - Animated gauges, live charts and build-up animations; with Reduce Motion they become simple fades.
 - The console shows new lines instantly over the panel's WebSocket and falls back to polling when the connection is unavailable. It keeps the last 1,000 lines.
+- Minecraft EULA: when a Java server can't start because its EULA isn't accepted, Kurafuto asks and starts it after you accept. You can also accept the EULA right away when creating a Java server.
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.

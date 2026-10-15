@@ -26,6 +26,19 @@ enum CraftyConsoleFeed {
         return plainLines(fromHTML: html)
     }
 
+    /// Server ID in `{"event":"send_eula_bootbox","data":{"id":"…"}}`: the panel refused to start a Java server
+    /// because its EULA is not accepted. Sent to all sockets of the user who pressed start.
+    static func eulaRequest(fromSocketMessage text: String) -> String? {
+        struct Request: Decodable {
+            struct Payload: Decodable { let id: String }
+            let event: String
+            let data: Payload
+        }
+        guard let request = try? JSONDecoder().decode(Request.self, from: Data(text.utf8)),
+              request.event == "send_eula_bootbox" else { return nil }
+        return request.data.id
+    }
+
     /// Crafty escapes the raw line, then wraps parts in `<span>` tags and appends `<br />`.
     /// Since the text itself is escaped, every `<` is markup: strip tags first, then unescape.
     static func plainLines(fromHTML html: String) -> [String] {
