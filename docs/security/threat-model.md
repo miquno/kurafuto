@@ -1,6 +1,6 @@
 # Threat model
 
-- Last reviewed: 2026-10-14 (0.1 foundation)
+- Last reviewed: 2026-10-15 (0.2 Face ID lock)
 - Update this document in the same pull request whenever a trust boundary, data category, network peer or stored secret changes.
 
 ## System today
@@ -51,7 +51,7 @@ An iOS app with no backend. The user adds one or more Crafty Controller panels (
 | Secrets in logs | B3 | No logging of tokens, passwords, URLs or console output | Rule in `AGENTS.md` |
 | App-switcher snapshot leaks panel data | B4 | Privacy cover whenever the scene is not active | Implemented |
 | Accidental destructive action | B4 | Confirmation dialogs for stop, kill, restore and delete; typed name to delete a server | Implemented |
-| Unauthorised use of an unlocked phone | B4 | Optional Face ID lock | Setting present; enforcement in 0.2 |
+| Unauthorised use of an unlocked phone | B4 | Optional app lock (`AppLock`, `deviceOwnerAuthentication`: Face ID/Touch ID with passcode fallback) on launch and return from background, with the app hidden behind a lock screen; confirmed stop, kill, delete and restore need a fresh check; turning the lock off needs one too | Implemented |
 | Third-party data leak (avatars, analytics, SDKs) | B1, B5 | No third-party hosts or dependencies (ADR 0002); privacy manifest declares none; PR template checklist | Implemented |
 | Malicious CI change or compromised action | B5 | Read-only `GITHUB_TOKEN`, SHA-pinned actions, `persist-credentials: false`, CODEOWNERS on `.github/` and `scripts/`, DCO | Implemented |
 | Website tracks visitors or loads third-party content | B6 | Static HTML only; CSP `default-src 'none'` with `'self'` styles and images; `no-referrer`; no scripts, cookies, fonts or embeds; HTTPS enforced by the `.app` HSTS preload (ADR 0006) | Implemented |

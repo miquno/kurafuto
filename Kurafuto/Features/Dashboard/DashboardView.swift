@@ -31,11 +31,7 @@ struct DashboardView: View {
             .navigationTitle(app.activeInstance?.name ?? "Servers")
             .navigationDestination(for: Server.self) { ServerDetailView(server: $0) }
             .sheet(isPresented: $showCreate, onDismiss: { Task { await load() } }) { CreateServerView() }
-            .confirmationDialog(confirm?.title ?? "", isPresented: .constant(confirm != nil), titleVisibility: .visible,
-                                presenting: confirm) { c in
-                Button(c.buttonLabel, role: .destructive) { Task { await c.perform(); confirm = nil } }
-                Button("Cancel", role: .cancel) { confirm = nil }
-            } message: { Text($0.message) }
+            .destructiveConfirmation($confirm)
             .task { await load() }
             .task { await pollStats() }
         }

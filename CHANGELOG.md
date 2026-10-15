@@ -17,4 +17,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Settings link to the website and privacy policy at getkurafuto.app.
 - New "Instrument" design on every screen: dark, gray and light modes, and your own accent color for the app, CPU, RAM, players and storage (Settings → Appearance).
 - Animated gauges, live charts and build-up animations; with Reduce Motion they become simple fades.
+- App lock: with "Lock with Face ID" on, Kurafuto asks for Face ID (or Touch ID or the device passcode) when it opens or returns from the background, and before stopping, killing, deleting or restoring. Turning the lock on or off also needs Face ID.
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.
