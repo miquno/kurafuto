@@ -12,7 +12,10 @@ protocol CraftyService: AnyObject, Sendable {
     func servers() async throws -> [Server]
     func server(id: String) async throws -> Server
     func stats(serverID: String) async throws -> ServerStats
+    /// Throws `CraftyError.eulaRequired` when the panel refuses to start a Java server without an accepted EULA.
     func send(_ action: ServerAction, serverID: String) async throws
+    /// Accepts the Minecraft EULA for a server; the panel starts the server right after.
+    func acceptEULA(serverID: String) async throws
     func sendCommand(_ command: String, serverID: String) async throws
     func logs(serverID: String, fromFile: Bool) async throws -> [String]
     func updateServer(_ server: Server) async throws
@@ -70,6 +73,7 @@ enum CraftyError: LocalizedError {
     case transport(Error)
     case untrustedCertificate(sha256: String)
     case notSupportedByPanelVersion(String)
+    case eulaRequired
 
     var errorDescription: String? {
         switch self {
@@ -81,6 +85,7 @@ enum CraftyError: LocalizedError {
         case .transport(let e): "Connection failed: \(e.localizedDescription)"
         case .untrustedCertificate: "The certificate is self-signed. Verify the fingerprint and trust it?"
         case .notSupportedByPanelVersion(let f): "\(f) is not supported by this panel version."
+        case .eulaRequired: "The Minecraft EULA must be accepted before this server can start."
         }
     }
 }

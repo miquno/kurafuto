@@ -32,6 +32,13 @@ final class ConsoleFeedTests: XCTestCase {
         XCTAssertEqual(CraftyConsoleFeed.lines(fromSocketMessage: "not json"), [])
     }
 
+    func testEULARequestNamesTheServer() {
+        XCTAssertEqual(CraftyConsoleFeed.eulaRequest(fromSocketMessage: #"{"event": "send_eula_bootbox", "data": {"id": "abc-123"}}"#), "abc-123")
+        XCTAssertNil(CraftyConsoleFeed.eulaRequest(fromSocketMessage: #"{"event":"notification","data":{"id":"abc-123"}}"#))
+        XCTAssertNil(CraftyConsoleFeed.eulaRequest(fromSocketMessage: #"{"event":"send_eula_bootbox","data":"abc-123"}"#))
+        XCTAssertNil(CraftyConsoleFeed.eulaRequest(fromSocketMessage: "nope"))
+    }
+
     func testSocketQuerySubscribesToServerPage() throws {
         let client = APIClient(baseURL: try XCTUnwrap(URL(string: "https://panel.example:8443")), token: "t.o.k")
         let task = try client.webSocket("/ws", query: CraftyConsoleFeed.socketQuery(serverID: "abc-123"))

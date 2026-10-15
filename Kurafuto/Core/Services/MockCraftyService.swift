@@ -15,6 +15,8 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     private var roles = MockData.roles
     private var announcementList = MockData.announcements
     private var console: [String: [String]] = [:]
+    /// Java servers created in the demo start only after their EULA is accepted, like on a real panel.
+    private var needsEULA: Set<String> = []
 
     var latency: Duration
     var failureRate: Double
@@ -72,6 +74,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
 
     func send(_ action: ServerAction, serverID: String) async throws {
         try await simulate()
+        if action == .start, sync({ needsEULA.contains(serverID) }) { throw CraftyError.eulaRequired }
         switch action {
         case .start, .restart:
             sync { stats[serverID]?.waitingStart = true; stats[serverID]?.crashed = false }
@@ -124,6 +127,11 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
                 self?.sync { self?.stats[serverID]?.updating = false }
             }
         }
+    }
+
+    func acceptEULA(serverID: String) async throws {
+        sync { _ = needsEULA.remove(serverID) }
+        try await send(.start, serverID: serverID)
     }
 
     func sendCommand(_ command: String, serverID: String) async throws {
@@ -189,6 +197,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
                                            type: request.kind == .java ? .minecraftJava : .minecraftBedrock))
             stats[id] = ServerStats(running: false, cpu: 0, mem: "0MB", memPercent: 0, online: 0, max: 20,
                                     players: [], version: request.version, firstRun: true)
+            if request.kind == .java, !request.agreeToEULA { needsEULA.insert(id) }
         }
         return id
     }

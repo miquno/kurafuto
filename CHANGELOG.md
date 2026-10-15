@@ -9,6 +9,7 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Dashboard with status, players, CPU and RAM for every server; start, stop, restart, kill, back up, clone and update servers.
 - Server detail with live CPU/RAM chart, console with quick commands and history, logs, players, schedules, backups, files, server.properties editor, webhooks and configuration.
 - Create Java and Bedrock servers.
+- Minecraft EULA: when a Java server can't start because its EULA isn't accepted, Kurafuto asks and starts it after you accept. You can also accept the EULA right away when creating a Java server.
 - Users and roles with a per-server permission matrix.
 - Host metrics and panel announcements.
 - Multiple panels, Face ID setting, and a privacy cover in the app switcher.

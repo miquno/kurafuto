@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var search = ""
     @State private var showCreate = false
     @State private var confirm: ConfirmAction?
+    @State private var eulaServer: Server?
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,7 @@ struct DashboardView: View {
             .navigationDestination(for: Server.self) { ServerDetailView(server: $0) }
             .sheet(isPresented: $showCreate, onDismiss: { Task { await load() } }) { CreateServerView() }
             .destructiveConfirmation($confirm)
+            .eulaPrompt(for: $eulaServer) { await load() }
             .task { await load() }
             .task { await pollStats() }
         }
@@ -205,7 +207,12 @@ struct DashboardView: View {
     }
 
     private func run(_ action: ServerAction, _ server: Server) async {
-        try? await app.service.send(action, serverID: server.id)
+        do {
+            try await app.service.send(action, serverID: server.id)
+        } catch CraftyError.eulaRequired {
+            eulaServer = server
+            return
+        } catch {}
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         await refreshStats([server])
     }

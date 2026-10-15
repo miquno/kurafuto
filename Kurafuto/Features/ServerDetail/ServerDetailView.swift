@@ -10,6 +10,7 @@ struct ServerDetailView: View {
     @State private var history: [StatPoint] = []
     @State private var busyAction: ServerAction?
     @State private var confirm: ConfirmAction?
+    @State private var eulaServer: Server?
     /// Start, restart and stop symbols differ in height; a shared box keeps the three buttons level.
     @ScaledMetric(relativeTo: .title3) private var actionIconHeight: CGFloat = 26
 
@@ -44,6 +45,7 @@ struct ServerDetailView: View {
             .accessibilityLabel("More actions")
         }
         .destructiveConfirmation($confirm)
+        .eulaPrompt(for: $eulaServer) { await refresh() }
         .task { await poll() }
         .refreshable { await refresh() }
     }
@@ -245,6 +247,8 @@ struct ServerDetailView: View {
         do {
             try await app.service.send(action, serverID: server.id)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+        } catch CraftyError.eulaRequired {
+            eulaServer = server
         } catch {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
         }
