@@ -84,22 +84,24 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
                 self?.sync {
                     self?.stats[serverID]?.waitingStart = false
                     self?.stats[serverID]?.running = true
+                    self?.stats[serverID]?.started = MockData.startedString(.now)
                     self?.stats[serverID]?.cpu = 18
                     self?.stats[serverID]?.mem = "2.2GB"
                     self?.stats[serverID]?.memPercent = 27
                 }
-                self?.appendConsole(serverID, "[INFO]: Done (8.214s)! For help, type \"help\"")
+                self?.appendConsole(serverID, "[\(MockData.consoleTime(.now)) INFO]: Done (8.214s)! For help, type \"help\"")
             }
         case .stop, .kill:
             sync {
                 stats[serverID]?.running = false
+                stats[serverID]?.started = nil
                 stats[serverID]?.online = 0
                 stats[serverID]?.players = []
                 stats[serverID]?.cpu = 0
                 stats[serverID]?.mem = "0MB"
                 stats[serverID]?.memPercent = 0
             }
-            appendConsole(serverID, "[INFO]: Stopping server")
+            appendConsole(serverID, "[\(MockData.consoleTime(.now)) INFO]: Stopping server")
         case .backup:
             let file = BackupFile(path: "/crafty/backups/\(serverID)/\(Int(Date().timeIntervalSince1970)).zip",
                                   size: 2_410_000_000, created: .now)
@@ -166,7 +168,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
                     seen = lines.count
                     try? await Task.sleep(for: .seconds(Double.random(in: 2...5)))
                     if self.sync({ self.stats[serverID]?.running == true }) {
-                        let now = Date.now.formatted(date: .omitted, time: .standard)
+                        let now = MockData.consoleTime(.now)
                         self.appendConsole(serverID, "[\(now) " + (MockData.randomLines.randomElement() ?? "[INFO]: tick").dropFirst())
                     }
                 }
