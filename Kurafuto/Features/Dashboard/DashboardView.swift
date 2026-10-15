@@ -13,6 +13,7 @@ struct DashboardView: View {
     @State private var confirm: ConfirmAction?
     @State private var actionError: Error?
     @State private var liveProblem: PanelProblem?
+    @State private var eulaServer: Server?
 
     var body: some View {
         NavigationStack {
@@ -36,6 +37,7 @@ struct DashboardView: View {
             .sheet(isPresented: $showCreate, onDismiss: { Task { await load() } }) { CreateServerView() }
             .destructiveConfirmation($confirm)
             .errorAlert($actionError)
+            .eulaPrompt(for: $eulaServer) { await load() }
             .task { await load() }
             .task { await pollStats() }
         }
@@ -223,6 +225,9 @@ struct DashboardView: View {
         do {
             try await app.service.send(action, serverID: server.id)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+        } catch CraftyError.eulaRequired {
+            eulaServer = server
+            return
         } catch {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
             actionError = error

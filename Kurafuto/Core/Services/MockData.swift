@@ -24,33 +24,57 @@ enum MockData {
         server(modpackID, "ATM10 Modpack", "neoforge-21.1.jar", port: 25567),
     ]
 
+    // Demo times follow the clock, so the demo never shows a start time in the future or a days-old uptime.
+    private static let survivalStart = Date.now.addingTimeInterval(-(2 * 3600 + 12 * 60))
+
+    /// Crafty's `started` format: UTC, `yyyy-MM-dd HH:mm:ss` (see `ServerStats.startTime`).
+    static func startedString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f.string(from: date)
+    }
+
+    /// Console timestamp as Minecraft prints it: local time, 24 h, independent of the device locale.
+    static func consoleTime(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm:ss"
+        return f.string(from: date)
+    }
+
     static let stats: [String: ServerStats] = [
-        survivalID: ServerStats(running: true, started: "2026-10-14 08:12:03", cpu: 23.4, mem: "3.1GB", memPercent: 38,
+        survivalID: ServerStats(running: true, started: startedString(survivalStart), cpu: 23.4, mem: "3.1GB", memPercent: 38,
                                 worldName: "world", worldSize: "2.4GB", serverPort: 25565, online: 4, max: 20,
                                 players: ["Steve_DE", "miquno", "Alex2010", "MasterBuilder"],
                                 desc: "§aWelcome to the SMP!", version: "Paper 1.21.4"),
         creativeID: ServerStats(running: false, cpu: 0, mem: "0MB", memPercent: 0, worldName: "creative",
                                 worldSize: "512MB", serverPort: 25566, online: 0, max: 10, players: [],
                                 desc: "Creative", version: "Purpur 1.21.4"),
-        bedrockID: ServerStats(running: true, started: "2026-10-13 19:44:51", cpu: 6.2, mem: "640MB", memPercent: 8,
+        bedrockID: ServerStats(running: true, started: startedString(.now.addingTimeInterval(-(27 * 3600 + 18 * 60))), cpu: 6.2, mem: "640MB", memPercent: 8,
                                worldName: "Bedrock level", worldSize: "180MB", serverPort: 19132, online: 1, max: 10,
                                players: ["PocketHero"], version: "1.21.40"),
         modpackID: ServerStats(running: false, cpu: 0, mem: "0MB", memPercent: 0, worldName: "world", worldSize: "6.8GB",
                                serverPort: 25567, online: 0, max: 8, players: [], version: "NeoForge 1.21.1", crashed: true),
     ]
 
-    static let consoleLines: [String] = [
-        "[08:12:03 INFO]: Starting minecraft server version 1.21.4",
-        "[08:12:03 INFO]: Loading properties",
-        "[08:12:04 INFO]: Default game type: SURVIVAL",
-        "[08:12:09 INFO]: Preparing level \"world\"",
-        "[08:12:15 INFO]: Done (11.832s)! For help, type \"help\"",
-        "[08:20:41 INFO]: Steve_DE joined the game",
-        "[08:21:02 INFO]: <Steve_DE> hey everyone",
-        "[08:25:17 WARN]: Can't keep up! Is the server overloaded? Running 2140ms behind",
-        "[08:31:55 INFO]: miquno joined the game",
-        "[08:32:10 INFO]: <miquno> who set my house on fire 😅",
-    ]
+    static let consoleLines: [String] = {
+        let start = survivalStart, now = Date.now
+        let lines: [(Date, String)] = [
+            (start, "INFO]: Starting minecraft server version 1.21.4"),
+            (start, "INFO]: Loading properties"),
+            (start + 1, "INFO]: Default game type: SURVIVAL"),
+            (start + 6, "INFO]: Preparing level \"world\""),
+            (start + 12, "INFO]: Done (11.832s)! For help, type \"help\""),
+            (now - 754, "INFO]: Steve_DE joined the game"),
+            (now - 733, "INFO]: <Steve_DE> hey everyone"),
+            (now - 478, "WARN]: Can't keep up! Is the server overloaded? Running 2140ms behind"),
+            (now - 80, "INFO]: miquno joined the game"),
+            (now - 65, "INFO]: <miquno> who set my house on fire 😅"),
+        ]
+        return lines.map { "[\(consoleTime($0.0)) \($0.1)" }
+    }()
 
     static let randomLines: [String] = [
         "[INFO]: Saving the game (this may take a moment!)",

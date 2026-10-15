@@ -15,6 +15,65 @@ final class MockServiceTests: XCTestCase {
         XCTAssertTrue(after.running)
     }
 
+    func testNewJavaServerNeedsEULABeforeStart() async throws {
+        let s = MockCraftyService(latency: .zero)
+        let id = try await s.createServer(CreateServerRequest(name: "Fresh", kind: .java, jarType: "paper", version: "1.21.4",
+                                                              memMinGB: 1, memMaxGB: 2, port: 25570))
+        do {
+            try await s.send(.start, serverID: id)
+            XCTFail("start must ask for the EULA first")
+        } catch CraftyError.eulaRequired {}
+        try await s.acceptEULA(serverID: id)
+        let starting = try await s.stats(serverID: id)
+        XCTAssertEqual(starting.status, .starting, "accepting the EULA also starts the server")
+        try await s.send(.start, serverID: id)
+    }
+
+    func testEULAAcceptedAtCreationStartsDirectly() async throws {
+        let s = MockCraftyService(latency: .zero)
+        let id = try await s.createServer(CreateServerRequest(name: "Fresh", kind: .java, agreeToEULA: true))
+        try await s.send(.start, serverID: id)
+    }
+
+    func testJavaCreateBodyCarriesEULAChoice() throws {
+        let body = try JSONEncoder().encode(CreateServerRequest(name: "Fresh", kind: .java, agreeToEULA: true))
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let java = try XCTUnwrap(json["minecraft_java_create_data"] as? [String: Any])
+        let download = try XCTUnwrap(java["download_jar_create_data"] as? [String: Any])
+        XCTAssertEqual(download["agree_to_eula"] as? Bool, true)
+    }
+
+    func testExistingDemoServersStartWithoutEULA() async throws {
+        let s = MockCraftyService(latency: .zero)
+        try await s.send(.start, serverID: MockData.creativeID)
+    }
+
+    func testDemoTimesFollowTheClock() throws {
+        let started = try XCTUnwrap(MockData.stats[MockData.survivalID]?.started.flatMap(ServerStats.startTime))
+        XCTAssertLessThan(started, .now, "a demo server never starts in the future")
+        XCTAssertGreaterThan(started, .now.addingTimeInterval(-86_400), "the demo uptime stays plausible")
+
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm:ss"
+        for line in MockData.consoleLines {
+            let stamp = String(line.dropFirst().prefix(8))
+            XCTAssertNotNil(f.date(from: stamp), "24 h timestamp regardless of locale: \(line)")
+        }
+    }
+
+    func testStartAndStopUpdateStartTime() async throws {
+        let s = MockCraftyService(latency: .zero)
+        let id = MockData.creativeID
+        try await s.send(.start, serverID: id)
+        try await Task.sleep(for: .seconds(3.5))
+        let started = try await s.stats(serverID: id).started.flatMap(ServerStats.startTime)
+        XCTAssertEqual(try XCTUnwrap(started).timeIntervalSinceNow, 0, accuracy: 10)
+        try await s.send(.stop, serverID: id)
+        let stopped = try await s.stats(serverID: id)
+        XCTAssertNil(stopped.started)
+    }
+
     func testCommandAppearsInLogs() async throws {
         let s = MockCraftyService(latency: .zero)
         try await s.sendCommand("say hello", serverID: MockData.survivalID)

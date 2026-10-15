@@ -17,6 +17,7 @@ against local test panels **4.7.0** and **4.11.0** (official Docker images, Pape
 | updateServer | `PATCH /api/v2/servers/{id}` | ✅ | – |
 | deleteServer | `DELETE /api/v2/servers/{id}` | ✅ | – |
 | send(action) | `POST /api/v2/servers/{id}/action/{start_server…}[/{action_id}]` | ✅ | start, stop, restart, kill ✅ · backup see below · clone, update – |
+| acceptEULA | `POST /api/v2/servers/{id}/action/eula` (writes `eula.txt`, then starts the server) | ⚠️ action name from panel source | ✅ |
 | sendCommand | `POST /api/v2/servers/{id}/stdin` (text/plain, no leading /) | ✅ | ✅ |
 | logs | `GET /api/v2/servers/{id}/logs?file=&colors=&raw=&html=` | ✅ | ✅ live buffer and file |
 | stats | `GET /api/v2/servers/{id}/stats` | ✅ | ✅ stopped and running |
@@ -44,7 +45,7 @@ Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.
 - **Logs:** HTML-escaped (Python `html.escape`) unless `raw=true`, which also keeps ANSI codes. The app unescapes the five entities and shows plain text.
 - **Console WebSocket:** not in the spec; ported from `websocket_handler.py` and `ServerOutBuf.new_line_handler`. Auth is the `token` cookie only (no header, no query); an invalid token is accepted at the handshake and closed right after. The server pushes `{"event":"vterm_new_line","data":{"line":…}}` – the line is HTML-escaped, wrapped in `<span>` highlight tags and ends with `<br />`; 4.11.0 batches up to 20 stdout lines per message, separated by `\n`. Only new lines are sent, so the backlog comes from `/logs`. 4.11.0 sends console lines only to users with the server's TERMINAL permission. Other events on the same socket (`update_server_details`, `notification`, …) are ignored for now. Pings are answered; the panel sends nothing while a server is idle.
 - **Logs buffer:** `/logs` without `file` returns a sliding window of `virtual_terminal_lines` (default 70), so polling diffs by overlap, not by count.
-- **EULA:** a new Java server only starts after `POST …/action/eula`. The app does not offer this yet; servers created in the app must be accepted in the web panel first.
+- **EULA:** a Java server only starts with `eula=true` in `eula.txt`. `start_server` still answers `ok`; the refusal arrives about a second later only as WebSocket event `{"event":"send_eula_bootbox","data":{"id":…}}` to the user who pressed start. The app opens the socket before sending `start_server`, waits up to 4 s (console output ends the wait early) and then asks; `action/eula` accepts and starts in one step. Creating a Java server accepts `agree_to_eula` in `download_jar_create_data` (4.7.0 and 4.11.0), which writes the file up front.
 - **Backup:** `action/backup_server` without an id uses the default backup config on 4.11.0. On 4.7.0 it answers `ok` but the backup fails inside the panel (`BackupsDoesNotExist`); it needs `action/backup_server/{backup_id}`. To be fixed together with the backups item in 0.3.
 
 - **Panel permissions:** `permissions` is a bit string in `EnumPermissionsCrafty` order – server creation, user config, roles config. Superusers get `"000"`, so check `superuser` from `/users/@me` first. Adding is allowed when the bit is set and the counter is below the limit, or the limit is `-1`; a limit of `0` blocks adding (`can_add_in_crafty`). Per-server rights of the signed-in user are not exposed; the panel enforces them per request.
