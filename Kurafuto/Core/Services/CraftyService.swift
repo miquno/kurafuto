@@ -20,8 +20,10 @@ protocol CraftyService: AnyObject, Sendable {
     func acceptEULA(serverID: String) async throws
     func sendCommand(_ command: String, serverID: String) async throws
     func logs(serverID: String, fromFile: Bool) async throws -> [String]
-    func updateServer(_ server: Server) async throws
-    func deleteServer(id: String) async throws
+    /// Sends only the changed fields; see `ServerConfigPatch`.
+    func updateServer(id: String, changes: ServerConfigPatch) async throws
+    /// `deleteFiles: false` only removes the server from the panel and keeps its folder on disk.
+    func deleteServer(id: String, deleteFiles: Bool) async throws
     func createServer(_ request: CreateServerRequest) async throws -> String
 
     /// Live console. Live implementation: WebSocket `/ws` (undocumented) with fallback to polling `logs`.
@@ -64,8 +66,11 @@ protocol CraftyService: AnyObject, Sendable {
 
     // Webhooks
     func webhooks(serverID: String) async throws -> [Webhook]
+    /// Creates the webhook when its id is 0.
     func saveWebhook(_ webhook: Webhook, serverID: String) async throws
     func deleteWebhook(id: Int, serverID: String) async throws
+    /// The panel sends a test message to the saved webhook; its delivery error comes back as `CraftyError.server`.
+    func testWebhook(id: Int, serverID: String) async throws
 
     // Users & roles (superuser, or USER_CONFIG / ROLES_CONFIG)
     func panelAccess() async throws -> PanelAccess

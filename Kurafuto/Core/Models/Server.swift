@@ -21,6 +21,11 @@ struct Server: Identifiable, Codable, Hashable {
     var serverPort: Int
     var logsDeleteAfter: Int
     var type: ServerType
+    var shutdownTimeout: Int?
+    /// Comma-separated exit codes that crash detection treats as a normal stop.
+    var ignoredExits: String?
+    var countPlayers: Bool?
+    var showStatus: Bool?
 
     enum CodingKeys: String, CodingKey {
         case serverID = "server_id"
@@ -39,6 +44,106 @@ struct Server: Identifiable, Codable, Hashable {
         case serverPort = "server_port"
         case logsDeleteAfter = "logs_delete_after"
         case type
+        case shutdownTimeout = "shutdown_timeout"
+        case ignoredExits = "ignored_exits"
+        case countPlayers = "count_players"
+        case showStatus = "show_status"
+    }
+}
+
+/// Body for `PATCH /api/v2/servers/{id}`: only the fields that changed. The panel validates with
+/// `additionalProperties: false`, and with a smaller schema for non-superusers, so the whole server never goes along.
+struct ServerConfigPatch: Encodable, Equatable {
+    var serverName: String?
+    var executionCommand: String?
+    var stopCommand: String?
+    var autoStart: Bool?
+    var autoStartDelay: Int?
+    var crashDetection: Bool?
+    var shutdownTimeout: Int?
+    var ignoredExits: String?
+    var serverIP: String?
+    var serverPort: Int?
+    var countPlayers: Bool?
+    var showStatus: Bool?
+    var logsDeleteAfter: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case serverName = "server_name"
+        case executionCommand = "execution_command"
+        case stopCommand = "stop_command"
+        case autoStart = "auto_start"
+        case autoStartDelay = "auto_start_delay"
+        case crashDetection = "crash_detection"
+        case shutdownTimeout = "shutdown_timeout"
+        case ignoredExits = "ignored_exits"
+        case serverIP = "server_ip"
+        case serverPort = "server_port"
+        case countPlayers = "count_players"
+        case showStatus = "show_status"
+        case logsDeleteAfter = "logs_delete_after"
+    }
+
+    init(from old: Server, to new: Server) {
+        func changed<T: Equatable>(_ key: KeyPath<Server, T>) -> T? { old[keyPath: key] == new[keyPath: key] ? nil : new[keyPath: key] }
+        serverName = changed(\.serverName).map { $0.trimmingCharacters(in: .whitespaces) }
+        executionCommand = changed(\.executionCommand) ?? nil
+        stopCommand = changed(\.stopCommand)
+        autoStart = changed(\.autoStart)
+        autoStartDelay = changed(\.autoStartDelay)
+        crashDetection = changed(\.crashDetection)
+        shutdownTimeout = changed(\.shutdownTimeout) ?? nil
+        ignoredExits = (changed(\.ignoredExits) ?? nil).map(Self.normalizedExits)
+        serverIP = changed(\.serverIP).map { $0.trimmingCharacters(in: .whitespaces) }
+        serverPort = changed(\.serverPort)
+        countPlayers = changed(\.countPlayers) ?? nil
+        showStatus = changed(\.showStatus) ?? nil
+        logsDeleteAfter = changed(\.logsDeleteAfter)
+    }
+
+    init() {}
+
+    var isEmpty: Bool { self == ServerConfigPatch() }
+
+    /// Fields only superusers may change (`server_patch_schema`); for everyone else the panel rejects the whole request.
+    var touchesSuperuserFields: Bool { executionCommand != nil || serverIP != nil || serverPort != nil || showStatus != nil }
+
+    func applied(to server: Server) -> Server {
+        var s = server
+        if let serverName { s.serverName = serverName }
+        if let executionCommand { s.executionCommand = executionCommand }
+        if let stopCommand { s.stopCommand = stopCommand }
+        if let autoStart { s.autoStart = autoStart }
+        if let autoStartDelay { s.autoStartDelay = autoStartDelay }
+        if let crashDetection { s.crashDetection = crashDetection }
+        if let shutdownTimeout { s.shutdownTimeout = shutdownTimeout }
+        if let ignoredExits { s.ignoredExits = ignoredExits }
+        if let serverIP { s.serverIP = serverIP }
+        if let serverPort { s.serverPort = serverPort }
+        if let countPlayers { s.countPlayers = countPlayers }
+        if let showStatus { s.showStatus = showStatus }
+        if let logsDeleteAfter { s.logsDeleteAfter = logsDeleteAfter }
+        return s
+    }
+
+    /// The panel compares the exit code as text against each comma-separated entry, so spaces must go.
+    static func normalizedExits(_ text: String) -> String { text.filter { !$0.isWhitespace } }
+
+    /// Why the panel (or the server afterwards) would not accept this configuration, or nil.
+    static func problem(for server: Server) -> String? {
+        let name = server.serverName.trimmingCharacters(in: .whitespaces)
+        if name.count < 2 || name.contains(where: { "/\\#".contains($0) }) {
+            return "The name needs at least 2 characters and must not contain / \\ or #."
+        }
+        if server.executionCommand?.trimmingCharacters(in: .whitespaces).isEmpty ?? false { return "Enter a start command." }
+        if server.stopCommand.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a stop command." }
+        if server.serverIP.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter the server IP." }
+        if !(1...65535).contains(server.serverPort) { return "The port must be between 1 and 65535." }
+        if let exits = server.ignoredExits,
+           normalizedExits(exits).range(of: #"^(-?\d+(,-?\d+)*)?$"#, options: .regularExpression) == nil {
+            return "Ignored exit codes are whole numbers separated by commas."
+        }
+        return nil
     }
 }
 
