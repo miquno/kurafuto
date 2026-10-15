@@ -41,6 +41,10 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     func stats(serverID: String) async throws -> ServerStats { try await client.request(.get, "/api/v2/servers/\(serverID)/stats") }
 
     func send(_ action: ServerAction, serverID: String) async throws {
+        // Without a config id, 4.7.0 answers ok but the backup fails inside the panel.
+        if action == .backup, let config = try? await backupConfigs(serverID: serverID).first {
+            return try await startBackup(serverID: serverID, configID: config.id)
+        }
         // Crafty answers start_server with ok and reports a missing EULA only over the WebSocket, so the socket
         // has to be connected (answered a ping) before the request goes out.
         guard action == .start,
@@ -182,20 +186,51 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/tasks/\(id)")
     }
 
-    // MARK: Backups ⚠️ (triggering a backup works ✅ via action/backup_server)
+    // MARK: Backups ✅ (routes from the panel source, verified on 4.7.0 and 4.11.0)
+    /// Answers without the envelope: an object keyed by backup id.
     func backupConfigs(serverID: String) async throws -> [BackupConfig] {
-        try await client.request(.get, "/api/v2/servers/\(serverID)/backups")
+        let configs: [String: BackupConfig] = try await client.requestUnwrapped(.get, "/api/v2/servers/\(serverID)/backups")
+        return BackupConfig.sorted(configs.values)
     }
-    func backupFiles(serverID: String, configID: String) async throws -> [BackupFile] {
-        try await client.request(.get, "/api/v2/servers/\(serverID)/backups/backup/\(configID)/files")
+    func saveBackupConfig(_ config: BackupConfig, includeLocation: Bool, serverID: String) async throws {
+        let body = BackupConfigBody(config: config, includeLocation: includeLocation)
+        if config.id.isEmpty {
+            let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/backups", body: .json(body))
+        } else {
+            let _: Empty = try await client.request(.patch, try Self.backupPath(serverID, config.id), body: .json(body))
+        }
     }
-    func restoreBackup(_ file: BackupFile, serverID: String) async throws {
-        let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/backups/backup/restore",
-                                                body: .json(["filename": file.fileName]))
+    func deleteBackupConfig(id: String, serverID: String) async throws {
+        let _: Empty = try await client.request(.delete, try Self.backupPath(serverID, id))
     }
-    func deleteBackup(_ file: BackupFile, serverID: String) async throws {
-        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/backups/backup/files",
-                                                body: .json(["filename": file.fileName]))
+    /// `GET …/files` exists since 4.11 and lists only `*.zip` paths; 4.7 answers 405.
+    func backupFiles(serverID: String, config: BackupConfig) async throws -> [BackupFile]? {
+        guard config.kind == .zip else { return nil }
+        struct Res: Decodable { let backups: [String] }
+        do {
+            let res: Res = try await client.requestUnwrapped(.get, try Self.backupPath(serverID, config.id) + "/files")
+            return BackupFile.list(fromPaths: res.backups)
+        } catch CraftyError.server(code: "METHOD_NOT_ALLOWED", _) {
+            return nil
+        }
+    }
+    func startBackup(serverID: String, configID: String) async throws {
+        guard BackupConfig.isValidID(configID) else { throw CraftyError.invalidURL }
+        let _: Empty = try await client.request(.post, "/api/v2/servers/\(serverID)/action/backup_server/\(configID)")
+    }
+    func restoreBackup(_ file: BackupFile, configID: String, inPlace: Bool, serverID: String) async throws {
+        struct Body: Encodable { let filename: String; let inPlace: Bool }
+        let _: Empty = try await client.request(.post, try Self.backupPath(serverID, configID),
+                                                body: .json(Body(filename: file.name, inPlace: inPlace)))
+    }
+    func deleteBackup(_ file: BackupFile, configID: String, serverID: String) async throws {
+        let _: Empty = try await client.request(.delete, try Self.backupPath(serverID, configID) + "/files",
+                                                body: .json(["filename": file.name]))
+    }
+
+    private static func backupPath(_ serverID: String, _ configID: String) throws -> String {
+        guard BackupConfig.isValidID(configID) else { throw CraftyError.invalidURL }
+        return "/api/v2/servers/\(serverID)/backups/backup/\(configID)"
     }
 
     // MARK: Files ⚠️ (new file endpoints since panel 4.7, e.g. files/copy, files/move)

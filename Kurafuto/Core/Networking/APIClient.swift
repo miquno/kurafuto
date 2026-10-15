@@ -8,15 +8,19 @@ final class APIClient: NSObject, @unchecked Sendable {
     let baseURL: URL
     var token: String?
     private let pinnedSHA256: String?
-    private lazy var session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
+    private let configuration: URLSessionConfiguration
+    private lazy var session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
 
     /// Set when an unknown self-signed certificate shows up → the UI asks the user.
     private(set) var lastSeenCertificateSHA256: String?
 
-    init(baseURL: URL, token: String? = nil, pinnedSHA256: String? = nil) {
+    /// `configuration` exists for tests; the app always uses an ephemeral session.
+    init(baseURL: URL, token: String? = nil, pinnedSHA256: String? = nil,
+         configuration: URLSessionConfiguration = .ephemeral) {
         self.baseURL = baseURL
         self.token = token
         self.pinnedSHA256 = pinnedSHA256
+        self.configuration = configuration
     }
 
     struct Envelope<T: Decodable>: Decodable {
@@ -42,6 +46,34 @@ final class APIClient: NSObject, @unchecked Sendable {
 
     func request<T: Decodable>(_ method: Method, _ path: String, query: [URLQueryItem] = [], body: Body = .none,
                                as type: T.Type = T.self) async throws -> T {
+        let (data, status) = try await perform(method, path, query: query, body: body)
+        let envelope: Envelope<T>
+        do { envelope = try JSONDecoder().decode(Envelope<T>.self, from: data) }
+        catch {
+            guard (200..<300).contains(status) else { throw fail(Self.failure(status: status, error: nil, detail: nil, path: path)) }
+            throw CraftyError.decoding(error)
+        }
+        guard envelope.status == "ok" else {
+            throw fail(Self.failure(status: status, error: envelope.error, detail: envelope.errorData, path: path))
+        }
+        if let d = envelope.data { return d }
+        if let e = Empty() as? T { return e }
+        throw CraftyError.decoding(URLError(.cannotParseResponse))
+    }
+
+    /// For endpoints that answer success without the `{status,data}` envelope (Crafty's backup routes).
+    /// Errors still arrive in the envelope.
+    func requestUnwrapped<T: Decodable>(_ method: Method, _ path: String, body: Body = .none) async throws -> T {
+        let (data, status) = try await perform(method, path, query: [], body: body)
+        guard (200..<300).contains(status) else {
+            let envelope = try? JSONDecoder().decode(Envelope<Empty>.self, from: data)
+            throw fail(Self.failure(status: status, error: envelope?.error, detail: envelope?.errorData, path: path))
+        }
+        do { return try JSONDecoder().decode(T.self, from: data) }
+        catch { throw CraftyError.decoding(error) }
+    }
+
+    private func perform(_ method: Method, _ path: String, query: [URLQueryItem], body: Body) async throws -> (Data, Int) {
         guard var comps = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
             throw CraftyError.invalidURL
         }
@@ -70,19 +102,7 @@ final class APIClient: NSObject, @unchecked Sendable {
             throw CraftyError.transport(error)
         }
 
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        let envelope: Envelope<T>
-        do { envelope = try JSONDecoder().decode(Envelope<T>.self, from: data) }
-        catch {
-            guard (200..<300).contains(status) else { throw fail(Self.failure(status: status, error: nil, detail: nil, path: path)) }
-            throw CraftyError.decoding(error)
-        }
-        guard envelope.status == "ok" else {
-            throw fail(Self.failure(status: status, error: envelope.error, detail: envelope.errorData, path: path))
-        }
-        if let d = envelope.data { return d }
-        if let e = Empty() as? T { return e }
-        throw CraftyError.decoding(URLError(.cannotParseResponse))
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
     }
 
     /// WebSocket on the same pinned, ephemeral session. Crafty reads the token only from the `token`

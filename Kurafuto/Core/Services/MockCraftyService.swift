@@ -8,6 +8,8 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     private var servers = MockData.servers
     private var stats = MockData.stats
     private var schedules: [String: [Schedule]] = [:]
+    private var backupConfigs: [String: [BackupConfig]] = [:]
+    /// Keyed by "serverID/configID".
     private var backups: [String: [BackupFile]] = [:]
     private var webhooks: [String: [Webhook]] = [:]
     private var files: [String: String] = ["server.properties": MockData.serverProperties]
@@ -103,9 +105,8 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
             }
             appendConsole(serverID, "[\(MockData.consoleTime(.now)) INFO]: Stopping server")
         case .backup:
-            let file = BackupFile(path: "/crafty/backups/\(serverID)/\(Int(Date().timeIntervalSince1970)).zip",
-                                  size: 2_410_000_000, created: .now)
-            sync { backups[serverID, default: MockData.backupFiles].insert(file, at: 0) }
+            let configID = sync { (backupConfigs[serverID] ?? MockData.backupConfigs).first?.id }
+            if let configID { addArchive(serverID: serverID, configID: configID) }
         case .clone:
             sync {
                 if var copy = servers.first(where: { $0.id == serverID }) {
@@ -228,14 +229,65 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     }
 
     // MARK: Backups
-    func backupConfigs(serverID: String) async throws -> [BackupConfig] { try await simulate(); return MockData.backupConfigs }
-    func backupFiles(serverID: String, configID: String) async throws -> [BackupFile] {
-        try await simulate(); return sync { backups[serverID] ?? MockData.backupFiles }
+    func backupConfigs(serverID: String) async throws -> [BackupConfig] {
+        try await simulate(); return sync { backupConfigs[serverID] ?? MockData.backupConfigs }
     }
-    func restoreBackup(_ file: BackupFile, serverID: String) async throws { try await Task.sleep(for: .seconds(2)) }
-    func deleteBackup(_ file: BackupFile, serverID: String) async throws {
+    func saveBackupConfig(_ config: BackupConfig, includeLocation: Bool, serverID: String) async throws {
         try await simulate()
-        sync { var l = backups[serverID] ?? MockData.backupFiles; l.removeAll { $0 == file }; backups[serverID] = l }
+        sync {
+            var list = backupConfigs[serverID] ?? MockData.backupConfigs
+            var c = config
+            if !includeLocation { c.location = list.first(where: \.isDefault)?.location ?? "/crafty/backups/\(serverID)" }
+            if let i = list.firstIndex(where: { $0.id == c.id }) { list[i] = c }
+            else { c.id = UUID().uuidString.lowercased(); c.isDefault = list.isEmpty; list.append(c) }
+            backupConfigs[serverID] = BackupConfig.sorted(list)
+        }
+    }
+    func deleteBackupConfig(id: String, serverID: String) async throws {
+        try await simulate()
+        try sync {
+            var list = backupConfigs[serverID] ?? MockData.backupConfigs
+            if list.first(where: { $0.id == id })?.isDefault == true {
+                throw CraftyError.server(code: "NOT_ALLOWED", detail: "Cannot delete default backup")
+            }
+            list.removeAll { $0.id == id }
+            backupConfigs[serverID] = list
+        }
+    }
+    func backupFiles(serverID: String, config: BackupConfig) async throws -> [BackupFile]? {
+        try await simulate()
+        guard config.kind == .zip else { return nil }
+        return sync { backups["\(serverID)/\(config.id)"] ?? (config.isDefault ? MockData.backupFiles : []) }
+    }
+    func startBackup(serverID: String, configID: String) async throws {
+        try await simulate()
+        addArchive(serverID: serverID, configID: configID)
+    }
+    func restoreBackup(_ file: BackupFile, configID: String, inPlace: Bool, serverID: String) async throws {
+        try await simulate()
+        appendConsole(serverID, "[\(MockData.consoleTime(.now)) INFO]: Restoring backup \(file.name)")
+    }
+    func deleteBackup(_ file: BackupFile, configID: String, serverID: String) async throws {
+        try await simulate()
+        sync {
+            let key = "\(serverID)/\(configID)"
+            let isDefault = (backupConfigs[serverID] ?? MockData.backupConfigs).first { $0.id == configID }?.isDefault == true
+            var list = backups[key] ?? (isDefault ? MockData.backupFiles : [])
+            list.removeAll { $0 == file }
+            backups[key] = list
+        }
+    }
+
+    private func addArchive(serverID: String, configID: String) {
+        guard let file = MockData.backupFile(at: .now) else { return }
+        sync {
+            let key = "\(serverID)/\(configID)"
+            let isDefault = (backupConfigs[serverID] ?? MockData.backupConfigs).first { $0.id == configID }?.isDefault == true
+            var list = backups[key] ?? (isDefault ? MockData.backupFiles : [])
+            list.removeAll { $0 == file }
+            list.insert(file, at: 0)
+            backups[key] = list
+        }
     }
 
     // MARK: Files

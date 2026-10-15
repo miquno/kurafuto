@@ -33,10 +33,18 @@ protocol CraftyService: AnyObject, Sendable {
     func deleteSchedule(id: Int, serverID: String) async throws
 
     // Backups
+    /// Default config first.
     func backupConfigs(serverID: String) async throws -> [BackupConfig]
-    func backupFiles(serverID: String, configID: String) async throws -> [BackupFile]
-    func restoreBackup(_ file: BackupFile, serverID: String) async throws
-    func deleteBackup(_ file: BackupFile, serverID: String) async throws
+    /// Creates the config when its id is empty. Only superusers may choose the location (`includeLocation`).
+    func saveBackupConfig(_ config: BackupConfig, includeLocation: Bool, serverID: String) async throws
+    /// Archives stay on the panel. 4.11 also deletes the config's schedules; 4.7 leaves them behind without a target.
+    func deleteBackupConfig(id: String, serverID: String) async throws
+    /// Nil when the panel cannot list the archives: Crafty 4.7 has no list endpoint, and snapshot configs are never listed.
+    func backupFiles(serverID: String, config: BackupConfig) async throws -> [BackupFile]?
+    func startBackup(serverID: String, configID: String) async throws
+    /// `inPlace` unpacks over the current files; otherwise the panel empties the server folder first.
+    func restoreBackup(_ file: BackupFile, configID: String, inPlace: Bool, serverID: String) async throws
+    func deleteBackup(_ file: BackupFile, configID: String, serverID: String) async throws
 
     // Files
     func listFiles(serverID: String, path: String) async throws -> [FileEntry]

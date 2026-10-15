@@ -10,6 +10,8 @@ struct SchedulesView: View {
     @State private var confirm: ConfirmAction?
     @State private var actionError: Error?
     @State private var added: [String] = []
+    /// Targets for backup schedules; stays empty without the server's backup permission.
+    @State private var backupConfigs: [BackupConfig] = []
 
     var body: some View {
         LoadableView(state: state, retry: load) { list in
@@ -23,7 +25,7 @@ struct SchedulesView: View {
                 .accessibilityLabel("New schedule")
         }
         .sheet(item: $editing) { s in
-            ScheduleEditor(schedule: s, all: state.value.flatMap { $0 } ?? []) { saved in
+            ScheduleEditor(schedule: s, all: state.value.flatMap { $0 } ?? [], backupConfigs: backupConfigs) { saved in
                 Task {
                     let ok = await $actionError.capture {
                         if saved.id == 0 { try await app.service.createSchedule(saved, serverID: server.id) }
@@ -96,21 +98,12 @@ struct SchedulesView: View {
         } actions: {
             Button("New Schedule") { editing = Self.newSchedule }
                 .buttonStyle(InstrumentButtonStyle()).frame(width: 200)
-            if let url = webPanelURL {
+            if let url = app.webPanelURL(serverID: server.id, subpage: "schedules") {
                 Link("Open Web Panel", destination: url).font(.subheadline).tint(Theme.accent)
             }
         }
         .themedBackground()
         .entrance()
-    }
-
-    /// The schedules page of the active panel, built from its stored address and the server's id.
-    private var webPanelURL: URL? {
-        guard let base = app.activeInstance?.baseURL,
-              var comps = URLComponents(url: base.appending(path: "/panel/server_detail"), resolvingAgainstBaseURL: false),
-              ["https", "http"].contains(comps.scheme) else { return nil }
-        comps.queryItems = [URLQueryItem(name: "id", value: server.id), URLQueryItem(name: "subpage", value: "schedules")]
-        return comps.url
     }
 
     private func icon(_ a: ScheduleAction) -> String {
@@ -125,6 +118,7 @@ struct SchedulesView: View {
 
     private func load() async {
         do { state = .loaded(try await app.service.schedules(serverID: server.id)) } catch { state = .failed(error) }
+        if backupConfigs.isEmpty { backupConfigs = (try? await app.service.backupConfigs(serverID: server.id)) ?? [] }
     }
 }
 
@@ -132,6 +126,7 @@ struct ScheduleEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State var schedule: Schedule
     let all: [Schedule]
+    let backupConfigs: [BackupConfig]
     let onSave: (Schedule) -> Void
     @State private var mode: Mode = .interval
 
@@ -147,6 +142,12 @@ struct ScheduleEditor: View {
                     TextField("Name", text: $schedule.name)
                     Picker("Action", selection: $schedule.action) {
                         ForEach(actions) { Text($0.label).tag($0) }
+                    }
+                    if schedule.action == .backup {
+                        Picker("Backup", selection: $schedule.backupID) {
+                            if schedule.backupID == nil { Text("–").tag(String?.none) }
+                            ForEach(backupConfigs) { Text($0.name).tag(Optional($0.id)) }
+                        }
                     }
                     if schedule.action == .command {
                         TextField("Command (e.g. say Hello)", text: Binding($schedule.command, replacingNilWith: ""))
@@ -196,20 +197,24 @@ struct ScheduleEditor: View {
                 case .minutes, .hours, .days: mode = .interval
                 }
             }
+            .onChange(of: schedule.action) { _, new in
+                if new == .backup, schedule.backupID == nil { schedule.backupID = backupConfigs.first?.id }
+            }
             .onChange(of: mode) { _, new in
                 if new == .interval, ![.minutes, .hours, .days].contains(schedule.intervalType) { schedule.intervalType = .days }
             }
         }
     }
 
-    /// Backup schedules need a backup config and arrive with the backups item; an existing one stays selectable.
+    /// Backup schedules need a backup config to run.
     private var actions: [ScheduleAction] {
-        [.start, .stop, .restart, .command] + (schedule.action == .backup ? [.backup] : [])
+        [.start, .stop, .restart] + (backupConfigs.isEmpty && schedule.action != .backup ? [] : [.backup]) + [.command]
     }
 
     private var isComplete: Bool {
         guard !schedule.name.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
         if schedule.action == .command, (schedule.command ?? "").trimmingCharacters(in: .whitespaces).isEmpty { return false }
+        if schedule.action == .backup, schedule.backupID == nil { return false }
         switch mode {
         case .interval: return true
         case .cron: return !(schedule.cronString ?? "").trimmingCharacters(in: .whitespaces).isEmpty
