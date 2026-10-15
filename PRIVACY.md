@@ -14,7 +14,7 @@ Nothing. Kurafuto contains no analytics, no crash reporting, no advertising, no 
 
 ## Where your data goes
 
-Kurafuto connects **only** to the panel address you enter. Everything you do in the app – signing in, starting servers, reading logs, editing files – is sent directly from your device to your panel and nowhere else.
+Kurafuto connects **only** to the panel address you enter. Everything you do in the app – signing in, starting servers, reading logs, editing files, uploading files you pick – is sent directly from your device to your panel and nowhere else.
 
 ## What is stored on your device
 

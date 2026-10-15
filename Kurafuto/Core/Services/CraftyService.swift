@@ -55,6 +55,10 @@ protocol CraftyService: AnyObject, Sendable {
     /// `name` must pass `ServerPath.isValidName`.
     func createFolder(serverID: String, parent: String, name: String) async throws
     func deleteFile(serverID: String, path: String) async throws
+    /// Uploads a local file into `folder` (a path from `listFiles`) as `name`, in chunks; `progress` gets 0...1.
+    /// The panel replaces an existing file of that name. Throws when `FileUpload.check` refuses the file.
+    func uploadFile(serverID: String, folder: String, name: String, from file: URL,
+                    progress: @escaping @Sendable (Double) -> Void) async throws
 
     // Webhooks
     func webhooks(serverID: String) async throws -> [Webhook]
@@ -88,6 +92,7 @@ enum CraftyError: LocalizedError {
     case eulaRequired
     case fileChanged
     case invalidName
+    case uploadRefused(String)
 
     var errorDescription: String? {
         switch self {
@@ -101,6 +106,7 @@ enum CraftyError: LocalizedError {
         case .notSupportedByPanelVersion(let f): "\(f) is not supported by this panel version."
         case .eulaRequired: "The Minecraft EULA must be accepted before this server can start."
         case .fileChanged: "The file was changed on the panel after you opened it."
+        case .uploadRefused(let reason): reason
         case .invalidName: "Names cannot be empty, \".\" or \"..\" and cannot contain / or \\."
         }
     }
