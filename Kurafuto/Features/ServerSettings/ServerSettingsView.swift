@@ -57,7 +57,11 @@ struct ServerSettingsView: View {
             TextField("Server name to confirm", text: $deleteText)
             Button("Delete", role: .destructive) {
                 guard deleteText == server.serverName else { return }
-                Task { try? await app.service.deleteServer(id: server.id); dismiss() }
+                Task {
+                    guard await app.lock.authorize("Delete \(server.serverName)") else { return }
+                    try? await app.service.deleteServer(id: server.id)
+                    dismiss()
+                }
             }
             Button("Cancel", role: .cancel) {}
         } message: { Text("Type “\(server.serverName)” to confirm.") }

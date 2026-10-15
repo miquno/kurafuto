@@ -10,6 +10,7 @@ struct FileBrowserView: View {
     @State private var newFolder = ""
     @State private var showNewFolder = false
     @State private var showImporter = false
+    @State private var confirm: ConfirmAction?
 
     var body: some View {
         LoadableView(state: state, retry: load) { entries in
@@ -30,6 +31,7 @@ struct FileBrowserView: View {
             .overlay { if entries.isEmpty { ContentUnavailableView("Empty Folder", systemImage: "folder") } }
         }
         .navigationTitle(path.isEmpty ? "Files" : (path as NSString).lastPathComponent)
+        .destructiveConfirmation($confirm)
         .toolbar {
             Menu {
                 Button { showNewFolder = true } label: { Label("New Folder", systemImage: "folder.badge.plus") }
@@ -60,7 +62,12 @@ struct FileBrowserView: View {
         }
         .swipeActions {
             Button(role: .destructive) {
-                Task { try? await app.service.deleteFile(serverID: server.id, path: e.path); await load() }
+                confirm = ConfirmAction(title: e.isDirectory ? "Delete folder?" : "Delete file?",
+                                        message: e.isDirectory ? "\(e.name) and everything in it will be deleted." : e.name,
+                                        buttonLabel: "Delete") {
+                    try? await app.service.deleteFile(serverID: server.id, path: e.path)
+                    await load()
+                }
             } label: { Label("Delete", systemImage: "trash") }
         }
     }

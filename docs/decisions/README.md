@@ -12,7 +12,8 @@ Write an ADR when a change adds a dependency, changes a trust boundary, adds a n
 | [0004](0004-self-signed-certificate-pinning.md) | Trust self-signed panels by explicit certificate pinning | Accepted |
 | [0005](0005-licence-and-naming.md) | MIT licence and the name "Kurafuto" | Accepted, amended by 0007 |
 | [0006](0006-website-and-domain.md) | Website on getkurafuto.app via GitHub Pages | Accepted |
-| [0007](0007-name-and-icon-outside-mit.md) | Name and app icon are not covered by the MIT licence | Accepted |
+| [0007](0007-name-and-icon-outside-mit.md) | Name and app icon are not covered by the MIT licence | Accepted, amended by 0008 |
+| [0008](0008-no-trademark-registration.md) | No trademark registration | Accepted |
 
 ## Template
 

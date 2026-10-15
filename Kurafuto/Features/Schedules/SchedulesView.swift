@@ -6,6 +6,7 @@ struct SchedulesView: View {
     let server: Server
     @State private var state: Loadable<[Schedule]> = .idle
     @State private var editing: Schedule?
+    @State private var confirm: ConfirmAction?
 
     var body: some View {
         LoadableView(state: state, retry: load) { list in
@@ -30,8 +31,10 @@ struct SchedulesView: View {
                         }
                     }
                     .onDelete { idx in
-                        Task {
-                            for i in idx { try? await app.service.deleteSchedule(id: list[i].id, serverID: server.id) }
+                        let doomed = idx.map { list[$0] }
+                        confirm = ConfirmAction(title: doomed.count == 1 ? "Delete schedule?" : "Delete \(doomed.count) schedules?",
+                                                message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
+                            for s in doomed { try? await app.service.deleteSchedule(id: s.id, serverID: server.id) }
                             await load()
                         }
                     }
@@ -43,6 +46,7 @@ struct SchedulesView: View {
             .overlay { if list.isEmpty { ContentUnavailableView("No Schedules", systemImage: "calendar") } }
         }
         .navigationTitle("Schedules")
+        .destructiveConfirmation($confirm)
         .toolbar {
             Button { editing = Schedule(id: 0, name: "", enabled: true, action: .restart, interval: 1, intervalType: .days,
                                         command: nil, parent: nil, oneTime: false, cronString: nil, delay: 0, nextRun: nil) }

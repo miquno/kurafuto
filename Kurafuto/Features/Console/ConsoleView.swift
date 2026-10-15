@@ -30,10 +30,10 @@ struct ConsoleView: View {
                         }
                     }
                     .padding(12)
-                    .animation(.snappy(duration: 0.25), value: lines.count)
+                    .animation(.snappy(duration: 0.25), value: lines.last?.id)
                 }
                 .background(Theme.console)
-                .onChange(of: lines.count) {
+                .onChange(of: lines.last?.id) {
                     if autoScroll, let last = lines.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } }
                 }
             }
@@ -99,7 +99,10 @@ struct ConsoleView: View {
             ShareLink(item: lines.map(\.text).joined(separator: "\n")) { Image(systemName: "square.and.arrow.up") }
         }
         .task {
-            for await line in app.service.consoleStream(serverID: server.id) { lines.append(line) }
+            for await line in app.service.consoleStream(serverID: server.id) {
+                lines.append(line)
+                if lines.count > CraftyConsoleFeed.memory { lines.removeFirst(lines.count - CraftyConsoleFeed.memory) }
+            }
         }
     }
 

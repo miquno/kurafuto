@@ -86,11 +86,7 @@ struct BackupsView: View {
         .themedBackground()
         .entrance()
         .navigationTitle("Backups")
-        .confirmationDialog(confirm?.title ?? "", isPresented: .constant(confirm != nil), titleVisibility: .visible,
-                            presenting: confirm) { c in
-            Button(c.buttonLabel, role: .destructive) { Task { await c.perform(); confirm = nil } }
-            Button("Cancel", role: .cancel) { confirm = nil }
-        } message: { Text($0.message) }
+        .destructiveConfirmation($confirm)
         .task {
             configs = (try? await app.service.backupConfigs(serverID: server.id)) ?? []
             selected = configs.first?.id ?? "default"

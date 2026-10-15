@@ -65,23 +65,70 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         return r.new_server_id
     }
 
-    /// Polling fallback. TODO ⚠️: the Crafty web UI uses a WebSocket (`wss://host/ws?page=/panel/server_detail&...`)
-    /// for the live console and stats – port the protocol from `app/classes/web/websocket_handler.py`.
+    /// Backlog from `/logs`, then new lines over the panel WebSocket `/ws` ⚠️ (undocumented; see
+    /// `CraftyConsoleFeed`). If the socket is refused, drops or stops answering pings, the stream keeps
+    /// going by polling `/logs`.
     func consoleStream(serverID: String) -> AsyncStream<LogLine> {
         AsyncStream { continuation in
             let task = Task {
-                var lastCount = 0
+                var shown = (try? await self.logs(serverID: serverID, fromFile: false)) ?? []
+                shown.forEach { continuation.yield(LogLine($0)) }
+
+                if let socket = try? self.client.webSocket("/ws", query: CraftyConsoleFeed.socketQuery(serverID: serverID)) {
+                    socket.resume()
+                    let keepAlive = Task { await Self.keepAlive(socket) }
+                    while !Task.isCancelled, let message = try? await Self.receive(from: socket) {
+                        let lines = CraftyConsoleFeed.lines(fromSocketMessage: message)
+                        lines.forEach { continuation.yield(LogLine($0)) }
+                        shown = CraftyConsoleFeed.remember(lines, after: shown)
+                    }
+                    keepAlive.cancel()
+                    socket.cancel(with: .goingAway, reason: nil)
+                }
+
                 while !Task.isCancelled {
-                    if let lines = try? await self.logs(serverID: serverID, fromFile: false) {
-                        let newLines = lines.count >= lastCount ? Array(lines.dropFirst(lastCount)) : lines
-                        newLines.forEach { continuation.yield(LogLine($0)) }
-                        lastCount = lines.count
+                    if let current = try? await self.logs(serverID: serverID, fromFile: false) {
+                        CraftyConsoleFeed.newLines(after: shown, in: current).forEach { continuation.yield(LogLine($0)) }
+                        shown = current
                     }
                     try? await Task.sleep(for: .seconds(2))
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private static func receive(from socket: URLSessionWebSocketTask) async throws -> String {
+        let message = try await withTaskCancellationHandler {
+            try await socket.receive()
+        } onCancel: {
+            socket.cancel(with: .goingAway, reason: nil)
+        }
+        switch message {
+        case .string(let text): return text
+        case .data(let data): return String(decoding: data, as: UTF8.self)
+        @unknown default: return ""
+        }
+    }
+
+    /// Crafty stays silent while a server is idle, so a dead connection only shows up through pings.
+    private static func keepAlive(_ socket: URLSessionWebSocketTask) async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(20))
+            guard !Task.isCancelled else { return }
+            let alive = await withTaskGroup(of: Bool.self) { group in
+                group.addTask {
+                    await withCheckedContinuation { done in socket.sendPing { done.resume(returning: $0 == nil) } }
+                }
+                group.addTask { try? await Task.sleep(for: .seconds(10)); return false }
+                let first = await group.next() ?? false
+                // Cancelling the socket also completes a pending ping, so the group can finish.
+                if !first { socket.cancel(with: .goingAway, reason: nil) }
+                group.cancelAll()
+                return first
+            }
+            if !alive { return }
         }
     }
 
