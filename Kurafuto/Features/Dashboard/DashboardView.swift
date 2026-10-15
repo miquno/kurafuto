@@ -71,7 +71,7 @@ struct DashboardView: View {
                 publishWidgets()
                 openRequestedServer()
             }
-            .onChange(of: app.requestedServerID) { openRequestedServer() }
+            .onChange(of: app.requestedServer) { openRequestedServer() }
         }
     }
 
@@ -128,17 +128,23 @@ struct DashboardView: View {
         guard let servers = model.servers.value, let panel = app.activeInstance else { return }
         let look = Appearance.shared
         WidgetSync.publish(WidgetSync.snapshot(panelName: panel.name, servers: servers, stats: model.stats,
+                                               history: model.history, backups: model.lastBackups,
                                                isPrivate: app.lock.isEnabled, mode: look.mode,
                                                accent: look.preset(for: .accent)))
     }
 
-    /// Only a server this panel lists is selected; a link to anything else is dropped.
+    /// Only a server this panel lists is shown; a link to anything else is dropped.
     private func openRequestedServer() {
-        guard let id = app.requestedServerID, let servers = model.servers.value else { return }
-        app.requestedServerID = nil
-        guard servers.contains(where: { $0.id == id }) else { return }
-        model.selectedID = id
+        guard let target = app.requestedServer, let servers = model.servers.value else { return }
+        app.requestedServer = nil
+        guard let server = servers.first(where: { $0.id == target.serverID }) else { return }
+        model.selectedID = server.id
         path = NavigationPath()
+        switch target.screen {
+        case .console: path.append(DashboardRoute.console(server))
+        case .details: path.append(DashboardRoute.detail(server))
+        case nil: break
+        }
     }
 
     // MARK: Actions

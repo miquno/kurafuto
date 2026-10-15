@@ -6,31 +6,67 @@ import WidgetKit
 struct KurafutoWidgets: WidgetBundle {
     var body: some Widget {
         ServerWidget()
+        LoadWidget()
+        PlayersWidget()
+        BackupWidget()
         PanelWidget()
     }
 }
 
-/// One server: status and players on the Home Screen (small) and the Lock Screen (circular, rectangular).
+/// One server: players ring (small), CPU and RAM (medium), everything with shortcuts (large), and on the Lock Screen.
 struct ServerWidget: Widget {
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: "dev.miquno.kurafuto.server", intent: SelectServerIntent.self, provider: SnapshotProvider()) { entry in
+        AppIntentConfiguration(kind: WidgetKind.server, intent: SelectServerIntent.self, provider: SnapshotProvider()) { entry in
             ServerWidgetView(entry: entry)
         }
         .configurationDisplayName("Server")
         .description("Status and players of one server.")
-        .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
+    }
+}
+
+struct LoadWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: WidgetKind.load, intent: SelectServerIntent.self, provider: SnapshotProvider()) { entry in
+            LoadWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Server Load")
+        .description("CPU and RAM of one server over the last hour.")
+        .supportedFamilies([.systemSmall, .accessoryRectangular])
+    }
+}
+
+struct PlayersWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: WidgetKind.players, intent: SelectServerIntent.self, provider: SnapshotProvider()) { entry in
+            PlayersWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Players")
+        .description("Who is online on one server.")
+        .supportedFamilies([.systemMedium])
+    }
+}
+
+struct BackupWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: WidgetKind.backup, intent: SelectServerIntent.self, provider: SnapshotProvider()) { entry in
+            BackupWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Backup")
+        .description("The latest backup of one server.")
+        .supportedFamilies([.systemSmall])
     }
 }
 
 /// Every server of the panel, crashed ones first.
 struct PanelWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "dev.miquno.kurafuto.panel", provider: SnapshotProvider()) { entry in
+        StaticConfiguration(kind: WidgetKind.panel, provider: SnapshotProvider()) { entry in
             PanelWidgetView(entry: entry)
         }
-        .configurationDisplayName("Servers")
+        .configurationDisplayName("Panel")
         .description("Status and players of every server on your panel.")
-        .supportedFamilies([.systemMedium])
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryCircular, .accessoryInline])
     }
 }
 
@@ -48,7 +84,7 @@ struct SnapshotProvider: AppIntentTimelineProvider, TimelineProvider {
         SnapshotEntry(date: .now, snapshot: .sample)
     }
 
-    // AppIntentTimelineProvider (ServerWidget)
+    // AppIntentTimelineProvider (widgets that show one server)
     func snapshot(for configuration: SelectServerIntent, in context: Context) async -> SnapshotEntry {
         entry(serverID: configuration.server?.id, preview: context.isPreview)
     }

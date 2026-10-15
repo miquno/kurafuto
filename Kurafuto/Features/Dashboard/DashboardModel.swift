@@ -15,6 +15,10 @@ final class DashboardModel {
     private(set) var liveProblem: PanelProblem?
     /// When live values last arrived from the panel; the widgets are updated from it.
     private(set) var lastRefresh: Date?
+    /// Newest backup archive per server, loaded only while a backup widget is placed.
+    private(set) var lastBackups: [String: WidgetSnapshot.Backup] = [:]
+    /// The widget kinds the user has placed; replaced in tests.
+    var installedWidgets: () async -> Set<String> = { await WidgetSync.installedKinds() }
     private(set) var busy: (serverID: String, action: ServerAction)?
     var selectedID: String?
     var actionError: Error?
@@ -56,7 +60,7 @@ final class DashboardModel {
     func attach(_ service: CraftyService) {
         guard self.service !== service else { return }
         self.service = service
-        servers = .idle; stats = [:]; history = [:]; consoleTail = [:]; liveProblem = nil
+        servers = .idle; stats = [:]; history = [:]; consoleTail = [:]; liveProblem = nil; lastBackups = [:]
     }
 
     func load() async {
@@ -68,6 +72,7 @@ final class DashboardModel {
             await refresh()
             if selectedID == nil || !list.contains(where: { $0.id == selectedID }) { selectedID = busiest(list)?.id }
             await selectionChanged()
+            await loadWidgetDetails(list)
         } catch {
             servers = .failed(error)
         }
@@ -106,6 +111,37 @@ final class DashboardModel {
         liveProblem = problems.count == list.count ? problems.first : nil
         if liveProblem == nil { lastRefresh = .now }
         if let server = selected { await refreshConsole(server) }
+    }
+
+    /// What only the widgets show: the last hour of every server and, for a backup widget, the newest archive.
+    /// Loaded once per load rather than on every poll, and not at all without widgets.
+    private func loadWidgetDetails(_ list: [Server]) async {
+        guard let service else { return }
+        let kinds = await installedWidgets()
+        guard !kinds.isEmpty else { return }
+        let wantsBackups = kinds.contains(WidgetKind.backup)
+        await withTaskGroup(of: (String, [StatSample]?, WidgetSnapshot.Backup?).self) { group in
+            for server in list {
+                let needsHistory = history[server.id] == nil
+                group.addTask {
+                    let samples = needsHistory ? try? await service.statsHistory(serverID: server.id) : nil
+                    let backup = wantsBackups ? await Self.newestBackup(serverID: server.id, service: service) : nil
+                    return (server.id, samples, backup)
+                }
+            }
+            for await (id, samples, backup) in group {
+                if let samples { history[id] = samples }
+                if let backup { lastBackups[id] = backup }
+            }
+        }
+    }
+
+    /// From the default backup configuration; nil where the panel cannot list archives (Crafty 4.7) or the user lacks the right.
+    private nonisolated static func newestBackup(serverID: String, service: CraftyService) async -> WidgetSnapshot.Backup? {
+        guard let config = try? await service.backupConfigs(serverID: serverID).first,
+              let files = try? await service.backupFiles(serverID: serverID, config: config),
+              let newest = files.max(by: { $0.created < $1.created }) else { return nil }
+        return WidgetSnapshot.Backup(date: newest.created, configName: config.name)
     }
 
     private func appendSample(_ value: ServerStats, to id: String) {

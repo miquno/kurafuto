@@ -24,8 +24,8 @@ final class AppState {
     var access: PanelAccess?
     /// The panel rejected the active token; RootView asks to sign in again.
     var sessionExpired = false
-    /// A widget asked to show this server; the Servers tab selects it once it lists it.
-    var requestedServerID: String?
+    /// A widget asked to show this server (or its console or details); the Servers tab opens it once it lists it.
+    var requestedServer: ServerLink.Target?
 
     init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool,
          lock: AppLock = AppLock()) {
@@ -151,7 +151,7 @@ struct RootView: View {
             }
         }
         .onOpenURL { url in
-            if let id = ServerLink.serverID(from: url) { app.requestedServerID = id }
+            if let target = ServerLink.target(from: url) { app.requestedServer = target }
         }
         .tint(Theme.accent)
         .preferredColorScheme(Appearance.shared.mode.colorScheme)
@@ -197,7 +197,7 @@ struct MainTabView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(Tab.settings)
         }
-        .onChange(of: app.requestedServerID) { _, id in if id != nil { tab = .servers } }
+        .onChange(of: app.requestedServer) { _, target in if target != nil { tab = .servers } }
         .task(id: ObjectIdentifier(app.service)) { await app.refreshAccess() }
     }
 }
