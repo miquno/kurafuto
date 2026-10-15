@@ -17,4 +17,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Settings link to the website and privacy policy at getkurafuto.app.
 - New "Instrument" design on every screen: dark, gray and light modes, and your own accent color for the app, CPU, RAM, players and storage (Settings → Appearance).
 - Animated gauges, live charts and build-up animations; with Reduce Motion they become simple fades.
+- Demo mode: start times and console timestamps follow the current clock instead of fixed dates, and starting or stopping a demo server updates its start time.
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.
