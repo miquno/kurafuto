@@ -48,12 +48,19 @@ protocol CraftyService: AnyObject, Sendable {
     func restoreBackup(_ file: BackupFile, configID: String, inPlace: Bool, serverID: String) async throws
     func deleteBackup(_ file: BackupFile, configID: String, serverID: String) async throws
 
-    // Files
+    // Files – paths are relative to the server folder and come from `listFiles`.
     func listFiles(serverID: String, path: String) async throws -> [FileEntry]
-    func readFile(serverID: String, path: String) async throws -> String
-    func writeFile(serverID: String, path: String, content: String) async throws
-    func createFolder(serverID: String, path: String) async throws
+    func readFile(serverID: String, path: String) async throws -> PanelFile
+    /// Throws `CraftyError.fileChanged` when the file changed on the panel after `modifiedEpoch`, unless `overwrite`.
+    /// Returns the new modification time.
+    func writeFile(serverID: String, path: String, content: String, modifiedEpoch: Double, overwrite: Bool) async throws -> Double
+    /// `name` must pass `ServerPath.isValidName`.
+    func createFolder(serverID: String, parent: String, name: String) async throws
     func deleteFile(serverID: String, path: String) async throws
+    /// Uploads a local file into `folder` (a path from `listFiles`) as `name`, in chunks; `progress` gets 0...1.
+    /// The panel replaces an existing file of that name. Throws when `FileUpload.check` refuses the file.
+    func uploadFile(serverID: String, folder: String, name: String, from file: URL,
+                    progress: @escaping @Sendable (Double) -> Void) async throws
 
     // Webhooks
     func webhooks(serverID: String) async throws -> [Webhook]
@@ -85,6 +92,9 @@ enum CraftyError: LocalizedError {
     case untrustedCertificate(sha256: String)
     case notSupportedByPanelVersion(String)
     case eulaRequired
+    case fileChanged
+    case invalidName
+    case uploadRefused(String)
 
     var errorDescription: String? {
         switch self {
@@ -97,6 +107,9 @@ enum CraftyError: LocalizedError {
         case .untrustedCertificate: "The certificate is self-signed. Verify the fingerprint and trust it?"
         case .notSupportedByPanelVersion(let f): "\(f) is not supported by this panel version."
         case .eulaRequired: "The Minecraft EULA must be accepted before this server can start."
+        case .fileChanged: "The file was changed on the panel after you opened it."
+        case .uploadRefused(let reason): reason
+        case .invalidName: "Names cannot be empty, \".\" or \"..\" and cannot contain / or \\."
         }
     }
 }
