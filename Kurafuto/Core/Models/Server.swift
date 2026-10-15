@@ -161,6 +161,20 @@ extension Server {
     }
 }
 
+extension Server {
+    /// The Java heap limit from `-Xmx` in the start command, the ceiling of the RAM chart.
+    var maxMemoryBytes: Double? {
+        guard let command = executionCommand,
+              let match = command.firstMatch(of: /-Xmx(\d+)([kKmMgG]?)/), let value = Double(match.1) else { return nil }
+        switch match.2.lowercased() {
+        case "k": return value * 1024
+        case "m": return value * 1024 * 1024
+        case "g": return value * 1024 * 1024 * 1024
+        default: return value
+        }
+    }
+}
+
 enum ServerType: String, Codable, CaseIterable {
     case minecraftJava = "minecraft-java"
     case minecraftBedrock = "minecraft-bedrock"
