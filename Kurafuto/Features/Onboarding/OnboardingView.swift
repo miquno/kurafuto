@@ -4,7 +4,7 @@ import SwiftUI
 /// Alternatively "Try the demo" with mock data – also important for App Review (Apple needs a test account!).
 struct OnboardingView: View {
     @Environment(AppState.self) private var app
-    @State private var name = "My Server"
+    @State private var name = String(localized: "My Server")
     @State private var address = "https://"
     @State private var username = ""
     @State private var password = ""

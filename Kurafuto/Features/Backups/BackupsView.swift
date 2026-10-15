@@ -69,9 +69,9 @@ struct BackupsView: View {
                     if !c.isDefault {
                         Section {
                             Button("Delete Configuration", role: .destructive) {
-                                confirm = ConfirmAction(title: "Delete configuration?",
-                                                        message: "\(c.name): backup schedules that use it stop running. Archives stay on the panel.",
-                                                        buttonLabel: "Delete") {
+                                confirm = ConfirmAction(title: String(localized: "Delete configuration?"),
+                                                        message: String(localized: "\(c.name): backup schedules that use it stop running. Archives stay on the panel."),
+                                                        buttonLabel: String(localized: "Delete")) {
                                     await $actionError.capture { try await app.service.deleteBackupConfig(id: c.id, serverID: server.id) }
                                     await loadConfigs()
                                 }
@@ -93,10 +93,10 @@ struct BackupsView: View {
     private func settings(_ c: BackupConfig) -> some View {
         Section("Settings") {
             LabeledContent("Destination") { Text(c.location).font(.mono(.caption)) }
-            LabeledContent("Keep", value: c.maxBackups == 0 ? "All archives" : "\(c.maxBackups) archives")
-            LabeledContent("Compressed", value: c.compress ? "Yes" : "No")
-            LabeledContent("Stop server", value: c.shutdown ? "Yes" : "No")
-            if c.kind == .snapshot { LabeledContent("Type", value: "Snapshot") }
+            LabeledContent("Keep") { Text(c.maxBackups == 0 ? "All archives" : "\(c.maxBackups) archives") }
+            LabeledContent("Compressed") { Text(c.compress ? "Yes" : "No") }
+            LabeledContent("Stop server") { Text(c.shutdown ? "Yes" : "No") }
+            if c.kind == .snapshot { LabeledContent("Type") { Text("Snapshot") } }
             if !c.beforeCommand.isEmpty { LabeledContent("Before") { Text(c.beforeCommand).font(.mono(.caption)) } }
             if !c.afterCommand.isEmpty { LabeledContent("After") { Text(c.afterCommand).font(.mono(.caption)) } }
             if !c.excludedPaths.isEmpty {
@@ -159,24 +159,24 @@ struct BackupsView: View {
 
     private func confirmRestore(_ f: BackupFile, _ c: BackupConfig, inPlace: Bool) {
         confirm = ConfirmAction(
-            title: inPlace ? "Restore backup?" : "Replace server files?",
+            title: inPlace ? String(localized: "Restore backup?") : String(localized: "Replace server files?"),
             message: inPlace
-                ? "\(f.name): the server stops and the archive is unpacked over its current files. Files that are not in the archive stay."
-                : "\(f.name): the server stops, its folder is emptied and the archive is unpacked. Everything that is not in the archive is lost.",
-            buttonLabel: inPlace ? "Restore" : "Replace"
+                ? String(localized: "\(f.name): the server stops and the archive is unpacked over its current files. Files that are not in the archive stay.")
+                : String(localized: "\(f.name): the server stops, its folder is emptied and the archive is unpacked. Everything that is not in the archive is lost."),
+            buttonLabel: inPlace ? String(localized: "Restore") : String(localized: "Replace")
         ) {
             let ok = await $actionError.capture {
                 try await app.service.restoreBackup(f, configID: c.id, inPlace: inPlace, serverID: server.id)
             }
             if ok {
-                notice = Notice(title: "Restore Started",
-                                message: "The panel restores \(f.name) in the background. Start the server again when it is done.")
+                notice = Notice(title: String(localized: "Restore Started"),
+                                message: String(localized: "The panel restores \(f.name) in the background. Start the server again when it is done."))
             }
         }
     }
 
     private func confirmDelete(_ f: BackupFile, _ c: BackupConfig) {
-        confirm = ConfirmAction(title: "Delete backup?", message: f.name, buttonLabel: "Delete") {
+        confirm = ConfirmAction(title: String(localized: "Delete backup?"), message: f.name, buttonLabel: String(localized: "Delete")) {
             await $actionError.capture { try await app.service.deleteBackup(f, configID: c.id, serverID: server.id) }
             await loadFiles()
         }
@@ -187,8 +187,8 @@ struct BackupsView: View {
         let ok = await $actionError.capture { try await app.service.startBackup(serverID: server.id, configID: c.id) }
         running = false
         if ok {
-            notice = Notice(title: "Backup Started",
-                            message: "The panel creates the archive in the background. Pull down to refresh the list.")
+            notice = Notice(title: String(localized: "Backup Started"),
+                            message: String(localized: "The panel creates the archive in the background. Pull down to refresh the list."))
         }
         await loadFiles()
     }
@@ -251,7 +251,7 @@ struct BackupConfigEditor: View {
         }
     }
 
-    private func command(_ label: String, _ example: String, _ text: Binding<String>) -> some View {
+    private func command(_ label: LocalizedStringKey, _ example: String, _ text: Binding<String>) -> some View {
         LabeledContent(label) {
             TextField(label, text: text, prompt: Text(example))
                 .monospaced().multilineTextAlignment(.trailing)

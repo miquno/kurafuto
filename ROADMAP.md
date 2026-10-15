@@ -49,7 +49,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 ## 0.4 – Admin and native extras
 
 - [x] Users and roles against a real panel; verify the permission bit order.
-- [ ] Localization with String Catalogs (English source, German first).
+- [x] Localization with String Catalogs (English source; German, Japanese and Simplified Chinese).
 - [ ] Home Screen and Lock Screen widgets (status and players), reading only cached, non-secret data.
 - [ ] App Intents / Shortcuts: start, stop, player count.
 

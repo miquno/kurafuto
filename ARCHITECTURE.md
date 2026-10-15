@@ -47,6 +47,10 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 
 `AppState.lock` (`AppLock`) wraps LocalAuthentication's `deviceOwnerAuthentication`, so Face ID or Touch ID falls back to the device passcode. When the lock is on, `RootView` covers the app with `LockView` at launch and after the scene went to the background (not on `.inactive`, which the Face ID prompt itself triggers). Destructive actions go through `.destructiveConfirmation` or `lock.authorize(_:)`. iOS answers only yes or no; no biometric data reaches the app.
 
+## Localization
+
+All UI text is English in code and translated in `Kurafuto/Resources/Localizable.xcstrings` (String Catalog: German, Japanese, Simplified Chinese, with plural variations); the permission prompts are in `InfoPlist.xcstrings`. The compiler records every localizable string (`SWIFT_EMIT_LOC_STRINGS`), and CI's `scripts/check-localizations.sh` fails when the catalog and the code drift apart or a translation is missing. Panel data is never translated or looked up as a key.
+
 ## Decisions
 
 See `docs/decisions/`.

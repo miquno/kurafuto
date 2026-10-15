@@ -290,7 +290,7 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         for index in 0..<total {
             try Task.checkCancellation()
             guard let chunk = try handle.read(upToCount: FileUpload.chunkBytes), !chunk.isEmpty else {
-                throw CraftyError.uploadRefused("The file changed while it was being uploaded.")
+                throw CraftyError.uploadRefused(String(localized: "The file changed while it was being uploaded."))
             }
             headers["chunkId"] = "\(index)"
             headers["chunkHash"] = SHA256.hash(data: chunk).map { String(format: "%02x", $0) }.joined()

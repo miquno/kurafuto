@@ -170,10 +170,11 @@ private struct ThemedRows: ViewModifier {
 
 /// Small uppercase monospaced label above a group of cards.
 struct SectionLabel: View {
-    let title: String
-    init(_ title: String) { self.title = title }
+    let title: LocalizedStringResource
+    init(_ title: LocalizedStringResource) { self.title = title }
     var body: some View {
-        Text(title.uppercased())
+        Text(title)
+            .textCase(.uppercase)
             .font(.mono(.caption2, weight: .medium))
             .tracking(0.8)
             .foregroundStyle(Theme.secondaryText)
@@ -265,7 +266,7 @@ struct RingGauge: View {
                 .trim(from: 0, to: shown / 100)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text("\(Int(clamped.rounded()))%")
+            Text(clamped / 100, format: .percent.precision(.fractionLength(0)))
                 .font(.mono(.subheadline, weight: .semibold))
                 .contentTransition(.numericText(value: clamped))
                 .animation(.snappy, value: clamped)
@@ -283,13 +284,15 @@ struct RingGauge: View {
 
 /// Inset tile with a ring gauge and a caption, as in the dashboard's featured server.
 struct GaugeTile: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: Double
     let color: Color
     var caption: String?
     var delay: Double = 0
 
     var body: some View {
+        let title = String(localized: title)
+        let percent = (min(max(value, 0), 100) / 100).formatted(.percent.precision(.fractionLength(0)))
         VStack(spacing: 8) {
             RingGauge(value: value, color: color, delay: delay)
                 .frame(width: 64, height: 64)
@@ -303,19 +306,19 @@ struct GaugeTile: View {
         .background(Theme.sunken, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(caption.map { "\(Int(value.rounded())) percent, \($0)" } ?? "\(Int(value.rounded())) percent")
+        .accessibilityValue(caption.map { "\(percent), \($0)" } ?? percent)
     }
 }
 
 /// Inset tile with a single value, the gauge tiles' plain sibling.
 struct ValueTile: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: String
     var color: Color = .primary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased()).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+            Text(title).textCase(.uppercase).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
             Text(value).font(.mono(.title3, weight: .semibold)).foregroundStyle(color)
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
@@ -505,11 +508,11 @@ extension PanelProblem {
     func message(for error: Error) -> String {
         switch self {
         case .offline:
-            "Check that the panel is running and that your iPhone can reach it, for example on the same network or over VPN."
+            String(localized: "Check that the panel is running and that your iPhone can reach it, for example on the same network or over VPN.")
         case .sessionExpired:
-            "Your session on this panel has ended. Sign in again to continue."
+            String(localized: "Your session on this panel has ended. Sign in again to continue.")
         case .permissionDenied:
-            "Your panel account is not allowed to do this. Ask the panel's admin for access.\n\n\(error.localizedDescription)"
+            String(localized: "Your panel account is not allowed to do this. Ask the panel's admin for access.") + "\n\n" + error.localizedDescription
         case .other:
             error.localizedDescription
         }

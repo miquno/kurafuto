@@ -41,7 +41,7 @@ Entry point for anyone – human or coding agent – changing Kurafuto. This fil
 - Do not silently swallow errors that the user must know about; show them. Never log tokens, passwords, panel URLs or console output.
 - Destructive actions (stop, kill, delete, restore) always require confirmation.
 - Keep comments minimal: only non-obvious constraints, quirks, or the reason for a surprising choice.
-- User-facing strings are English; localization arrives with String Catalogs (see `ROADMAP.md`).
+- User-facing strings are written in English and translated in `Kurafuto/Resources/Localizable.xcstrings` (German, Japanese, Simplified Chinese). A new string needs all three translations in the same pull request; CI checks it with `scripts/check-localizations.sh`.
 
 ## Privacy rules (non-negotiable)
 

@@ -8,17 +8,17 @@ struct PlayerCount: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text("\(online)")
+            Text(verbatim: "\(online)")
                 .font(.mono(large ? .title : .subheadline, weight: .semibold))
                 .contentTransition(.numericText(value: Double(online)))
                 .animation(.snappy, value: online)
-            Text("/\(max)")
+            Text(verbatim: "/\(max)")
                 .font(.mono(large ? .subheadline : .caption))
                 .foregroundStyle(Theme.secondaryText)
         }
         .foregroundStyle(.primary)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(online) of \(max) players")
+        .accessibilityLabel("Players: \(online) of \(max)")
     }
 }
 

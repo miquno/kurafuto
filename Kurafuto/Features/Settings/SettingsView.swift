@@ -41,7 +41,7 @@ struct SettingsView: View {
                     } footer: {
                         Text(app.lock.kind == .unavailable
                              ? "Set a device passcode to use the app lock."
-                             : "Asks for \(app.lock.kind.label) when Kurafuto opens and before stop, kill, delete and restore.")
+                             : "Asks for \(app.lock.kind.label) when Kurafuto opens and before stopping, killing, deleting or restoring.")
                     }
 
                     Section("Refresh") {

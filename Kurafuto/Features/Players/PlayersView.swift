@@ -83,7 +83,7 @@ struct PlayersView: View {
     private func cmd(_ c: String) {
         Task {
             guard await $actionError.capture({ try await app.service.sendCommand(c, serverID: server.id) }) else { return }
-            withAnimation { toast = "Sent: \(c)" }
+            withAnimation { toast = String(localized: "Sent: \(c)") }
             try? await Task.sleep(for: .seconds(2))
             withAnimation { toast = nil }
         }

@@ -133,15 +133,17 @@ struct ServerConfigPatch: Encodable, Equatable {
     static func problem(for server: Server) -> String? {
         let name = server.serverName.trimmingCharacters(in: .whitespaces)
         if name.count < 2 || name.contains(where: { "/\\#".contains($0) }) {
-            return "The name needs at least 2 characters and must not contain / \\ or #."
+            return String(localized: "The name needs at least 2 characters and must not contain / \\ or #.")
         }
-        if server.executionCommand?.trimmingCharacters(in: .whitespaces).isEmpty ?? false { return "Enter a start command." }
-        if server.stopCommand.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a stop command." }
-        if server.serverIP.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter the server IP." }
-        if !(1...65535).contains(server.serverPort) { return "The port must be between 1 and 65535." }
+        if server.executionCommand?.trimmingCharacters(in: .whitespaces).isEmpty ?? false {
+            return String(localized: "Enter a start command.")
+        }
+        if server.stopCommand.trimmingCharacters(in: .whitespaces).isEmpty { return String(localized: "Enter a stop command.") }
+        if server.serverIP.trimmingCharacters(in: .whitespaces).isEmpty { return String(localized: "Enter the server IP.") }
+        if !(1...65535).contains(server.serverPort) { return String(localized: "The port must be between 1 and 65535.") }
         if let exits = server.ignoredExits,
            normalizedExits(exits).range(of: #"^(-?\d+(,-?\d+)*)?$"#, options: .regularExpression) == nil {
-            return "Ignored exit codes are whole numbers separated by commas."
+            return String(localized: "Ignored exit codes are whole numbers separated by commas.")
         }
         return nil
     }
@@ -177,7 +179,7 @@ enum ServerType: String, Codable, CaseIterable {
         case .minecraftJava: "Java"
         case .minecraftBedrock: "Bedrock"
         case .steamCMD: "SteamCMD"
-        case .unknown: "Unknown"
+        case .unknown: String(localized: "Unknown")
         }
     }
 
@@ -203,13 +205,13 @@ enum ServerAction: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .start: "Start"
-        case .stop: "Stop"
-        case .restart: "Restart"
-        case .kill: "Force Kill"
-        case .backup: "Create Backup"
-        case .updateExecutable: "Update Server JAR"
-        case .clone: "Clone Server"
+        case .start: String(localized: "Start")
+        case .stop: String(localized: "Stop")
+        case .restart: String(localized: "Restart")
+        case .kill: String(localized: "Force Kill")
+        case .backup: String(localized: "Create Backup")
+        case .updateExecutable: String(localized: "Update Server JAR")
+        case .clone: String(localized: "Clone Server")
         }
     }
 

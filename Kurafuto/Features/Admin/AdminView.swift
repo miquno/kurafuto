@@ -90,7 +90,7 @@ struct AdminView: View {
             IconTile(symbol: u.superuser ? "crown.fill" : "person.fill",
                      color: u.superuser ? Theme.warning : Theme.accent, size: 32)
             VStack(alignment: .leading) {
-                Text(u.userID == myID ? "\(u.username) (you)" : u.username)
+                Text(u.userID == myID ? String(localized: "\(u.username) (you)") : u.username)
                     .foregroundStyle(u.enabled ? .primary : Theme.secondaryText)
                 Text(roleNames(u)).font(.caption).foregroundStyle(Theme.secondaryText)
             }
@@ -108,28 +108,32 @@ struct AdminView: View {
                 Image(systemName: "lock.shield").foregroundStyle(Theme.secondaryText).accessibilityLabel("Requires 2FA")
             }
             if let servers = r.servers {
-                Text(servers.count == 1 ? "1 server" : "\(servers.count) servers").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+                Text("\(servers.count) servers").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
             }
         }
         .accessibilityElement(children: .combine)
     }
 
     private func roleNames(_ u: CraftyUser) -> String {
-        if u.superuser { return "Superuser" }
+        if u.superuser { return String(localized: "Superuser") }
         let known = roles.filter { u.roleIDs.contains($0.roleID) }.map(\.roleName)
         if !known.isEmpty { return known.joined(separator: ", ") }
-        return u.roleIDs.isEmpty ? "No role" : (u.roleIDs.count == 1 ? "1 role" : "\(u.roleIDs.count) roles")
+        return u.roleIDs.isEmpty ? String(localized: "No role") : String(localized: "\(u.roleIDs.count) roles")
     }
 
     private func confirmDelete(_ u: CraftyUser) {
-        confirm = ConfirmAction(title: "Delete user?", message: "\(u.username) can no longer sign in to the panel.", buttonLabel: "Delete") {
+        confirm = ConfirmAction(title: String(localized: "Delete user?"),
+                                message: String(localized: "\(u.username) can no longer sign in to the panel."),
+                                buttonLabel: String(localized: "Delete")) {
             await $actionError.capture { try await app.service.deleteUser(id: u.userID) }
             await load()
         }
     }
 
     private func confirmDelete(_ r: Role) {
-        confirm = ConfirmAction(title: "Delete role?", message: "Members of \(r.roleName) lose the server rights it gives.", buttonLabel: "Delete") {
+        confirm = ConfirmAction(title: String(localized: "Delete role?"),
+                                message: String(localized: "Members of \(r.roleName) lose the server rights it gives."),
+                                buttonLabel: String(localized: "Delete")) {
             await $actionError.capture { try await app.service.deleteRole(id: r.roleID) }
             await load()
         }
@@ -146,7 +150,7 @@ struct AdminView: View {
             roles = try await r
             servers = try await s
         } catch CraftyError.forbidden {
-            users = .failed(CraftyError.forbidden("User management (superusers only)"))
+            users = .failed(CraftyError.forbidden(String(localized: "User management (superusers only)")))
         } catch { users = .failed(error) }
     }
 }
@@ -224,7 +228,7 @@ struct UserEditor: View {
                 .themedRows()
             }
             .themedBackground()
-            .navigationTitle(isNew ? "New User" : original.username)
+            .navigationTitle(isNew ? String(localized: "New User") : original.username)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -282,7 +286,7 @@ struct RoleEditor: View {
                 .themedRows()
             }
             .themedBackground()
-            .navigationTitle(role.roleID == 0 ? "New Role" : role.roleName)
+            .navigationTitle(role.roleID == 0 ? String(localized: "New Role") : role.roleName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

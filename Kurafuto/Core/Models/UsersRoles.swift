@@ -88,9 +88,11 @@ struct UserChanges: Encodable, Equatable {
 
     /// Why the panel would refuse this user, or nil.
     static func problem(for user: CraftyUser, password: String, isNew: Bool) -> String? {
-        if !isValidUsername(user.username) { return "Usernames use 3–20 lowercase letters, digits or _." }
-        if isNew && password.isEmpty { return "Enter a password." }
-        if !password.isEmpty && password.count < minimumPasswordLength { return "Passwords need at least 8 characters." }
+        if !isValidUsername(user.username) { return String(localized: "Usernames use 3–20 lowercase letters, digits or _.") }
+        if isNew && password.isEmpty { return String(localized: "Enter a password.") }
+        if !password.isEmpty && password.count < minimumPasswordLength {
+            return String(localized: "Passwords need at least 8 characters.")
+        }
         return nil
     }
 }
@@ -187,14 +189,14 @@ enum ServerPermission: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var label: String {
         switch self {
-        case .commands: "Commands"
-        case .terminal: "Terminal"
-        case .logs: "Logs"
-        case .schedule: "Schedules"
-        case .backup: "Backups"
-        case .files: "Files"
-        case .config: "Config"
-        case .players: "Players"
+        case .commands: String(localized: "Commands")
+        case .terminal: String(localized: "Terminal")
+        case .logs: String(localized: "Logs")
+        case .schedule: String(localized: "Schedules")
+        case .backup: String(localized: "Backups")
+        case .files: String(localized: "Files")
+        case .config: String(localized: "Config")
+        case .players: String(localized: "Players")
         }
     }
 }
