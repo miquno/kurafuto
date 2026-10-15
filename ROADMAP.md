@@ -42,8 +42,8 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 
 ## 0.3 – Management
 
-- [ ] Verify and enable schedules (list), backups, files and `server.properties` editing (⚠️ endpoints).
-- [ ] File upload for plugins/mods with size limits and path validation.
+- [x] Verify and enable schedules (list), backups, files and `server.properties` editing (⚠️ endpoints). Crafty's API cannot list schedules or, on 4.7, backup archives; the app links to the web panel for those (`docs/api/crafty-api-v2.md`).
+- [x] File upload for plugins/mods with size limits and path validation.
 - [x] Webhook editing and server configuration against a real panel.
 
 ## 0.4 – Admin and native extras

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Body of `POST /api/v2/auth/login`. `totp` must be left out when empty:
@@ -39,6 +40,11 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
     func servers() async throws -> [Server] { try await client.request(.get, "/api/v2/servers") }
     func server(id: String) async throws -> Server { try await client.request(.get, "/api/v2/servers/\(id)") }
     func stats(serverID: String) async throws -> ServerStats { try await client.request(.get, "/api/v2/servers/\(serverID)/stats") }
+    /// ⚠️ Not in the spec; route from the panel source (`history.py`), verified on 4.7.0 and 4.11.0.
+    func statsHistory(serverID: String) async throws -> [StatSample] {
+        let rows: [StatsHistoryRow] = try await client.request(.get, "/api/v2/servers/\(serverID)/history")
+        return rows.compactMap(\.sample).sorted { $0.date < $1.date }
+    }
 
     func send(_ action: ServerAction, serverID: String) async throws {
         // Without a config id, 4.7.0 answers ok but the backup fails inside the panel.
@@ -235,21 +241,69 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         return "/api/v2/servers/\(serverID)/backups/backup/\(configID)"
     }
 
-    // MARK: Files ⚠️ (new file endpoints since panel 4.7, e.g. files/copy, files/move)
+    // MARK: Files ✅ (routes from the panel source, verified on 4.7.0 and 4.11.0)
+    // Never copy/move: those had a path traversal in 4.7.0 (issue #660).
     func listFiles(serverID: String, path: String) async throws -> [FileEntry] {
-        throw CraftyError.notSupportedByPanelVersion("File manager – endpoints not verified yet")
+        let listing: FolderListing = try await client.request(.post, "/api/v2/servers/\(serverID)/files",
+                                                              body: .json(["path": path]))
+        return listing.entries
     }
-    func readFile(serverID: String, path: String) async throws -> String {
-        throw CraftyError.notSupportedByPanelVersion("Reading files")
+    func readFile(serverID: String, path: String) async throws -> PanelFile {
+        try await client.request(.post, "/api/v2/servers/\(serverID)/files", body: .json(["path": path]))
     }
-    func writeFile(serverID: String, path: String, content: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Saving files")
+    func writeFile(serverID: String, path: String, content: String, modifiedEpoch: Double, overwrite: Bool) async throws -> Double {
+        struct Body: Encodable {
+            let path: String, contents: String, modified_epoch: Double, overwrite: Bool
+        }
+        struct Res: Decodable {
+            struct Attributes: Decodable { let modified_epoch: Double }
+            let attributes: Attributes
+        }
+        do {
+            let res: Res = try await client.request(.patch, "/api/v2/servers/\(serverID)/files",
+                                                    body: .json(Body(path: path, contents: content, modified_epoch: modifiedEpoch,
+                                                                     overwrite: overwrite)))
+            return res.attributes.modified_epoch
+        } catch CraftyError.server(code: "409", _) {
+            throw CraftyError.fileChanged
+        }
     }
-    func createFolder(serverID: String, path: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Creating folders")
+    func createFolder(serverID: String, parent: String, name: String) async throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        struct Body: Encodable { let parent: String, name: String, directory: Bool }
+        let _: Empty = try await client.request(.put, "/api/v2/servers/\(serverID)/files/create",
+                                                body: .json(Body(parent: parent, name: name, directory: true)))
+    }
+    /// Same protocol as the web panel's `upload.js` (4.7.0 and 4.11.0): an empty first request announces the
+    /// file, then every chunk carries its index and SHA-256; the panel joins them after the last one.
+    func uploadFile(serverID: String, folder: String, name: String, from file: URL,
+                    progress: @escaping @Sendable (Double) -> Void) async throws {
+        let size = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        try FileUpload.check(name: name, folder: folder, size: size)
+        let handle = try FileHandle(forReadingFrom: file)
+        defer { try? handle.close() }
+        let path = "/api/v2/servers/\(serverID)/files/upload"
+        let total = FileUpload.chunkCount(for: size)
+        var headers = ["chunked": "true", "fileSize": "\(size)", "totalChunks": "\(total)",
+                       "fileName": name, "location": folder, "fileId": UUID().uuidString.lowercased()]
+        _ = try await client.upload(path, headers: headers, body: nil)
+        for index in 0..<total {
+            try Task.checkCancellation()
+            guard let chunk = try handle.read(upToCount: FileUpload.chunkBytes), !chunk.isEmpty else {
+                throw CraftyError.uploadRefused("The file changed while it was being uploaded.")
+            }
+            headers["chunkId"] = "\(index)"
+            headers["chunkHash"] = SHA256.hash(data: chunk).map { String(format: "%02x", $0) }.joined()
+            let status = try await client.upload(path, headers: headers, body: chunk)
+            progress(Double(index + 1) / Double(total))
+            if index == total - 1, status != "completed" {
+                throw CraftyError.server(code: "UPLOAD_INCOMPLETE", detail: status)
+            }
+        }
     }
     func deleteFile(serverID: String, path: String) async throws {
-        throw CraftyError.notSupportedByPanelVersion("Deleting files")
+        let _: Empty = try await client.request(.delete, "/api/v2/servers/\(serverID)/files",
+                                                body: .json(["file_system_objects": [["filename": path]]]))
     }
 
     // MARK: Webhooks ✅ (the spec's singular `/server/{id}/webhook/{wid}` does not exist; the panel routes `/servers/`)

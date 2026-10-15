@@ -12,7 +12,11 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     /// Keyed by "serverID/configID".
     private var backups: [String: [BackupFile]] = [:]
     private var webhooks: [String: [Webhook]] = [:]
-    private var files: [String: String] = ["server.properties": MockData.serverProperties]
+    private var files: [String: PanelFile] = ["server.properties": PanelFile(content: MockData.serverProperties, modifiedEpoch: 1)]
+    private var createdFolders: Set<String> = []
+    private var deletedPaths: Set<String> = []
+    /// Uploaded files by path, with the panel-style size text.
+    private var uploadedFiles: [String: String] = [:]
     private var users = MockData.users
     private var roles = MockData.roles
     private var announcementList = MockData.announcements
@@ -68,6 +72,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
             if s.running { // add some movement to the values
                 s.cpu = max(1, min(95, s.cpu + Double.random(in: -6...6)))
                 s.memPercent = max(5, min(90, s.memPercent + Double.random(in: -2...2)))
+                s.memBytes = s.memBytes.map { max(0, $0 * (1 + Double.random(in: -0.02...0.02))) }
                 stats[serverID] = s
             }
             return s
@@ -151,6 +156,21 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
 
     private func appendConsole(_ serverID: String, _ line: String) {
         sync { console[serverID, default: MockData.consoleLines].append(line) }
+    }
+
+    /// An hour of plausible values every 30 s, like the panel records them; flat while the server is down.
+    func statsHistory(serverID: String) async throws -> [StatSample] {
+        try await simulate()
+        let current = sync { stats[serverID] }
+        guard let current, current.running else { return [] }
+        let mem = current.memBytes ?? 0
+        return (0..<120).map { i in
+            let t = Double(i)
+            let wave = sin(t / 9) * 0.5 + sin(t / 3.7) * 0.3
+            return StatSample(date: .now.addingTimeInterval(-Double(119 - i) * 30),
+                              cpu: max(1, current.cpu + wave * 8),
+                              memBytes: max(0, mem * (1 + wave * 0.06)))
+        }
     }
 
     func logs(serverID: String, fromFile: Bool) async throws -> [String] {
@@ -293,21 +313,66 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     // MARK: Files
     func listFiles(serverID: String, path: String) async throws -> [FileEntry] {
         try await simulate()
-        switch path {
-        case "", "/": return MockData.rootFiles
-        case "plugins": return MockData.pluginFiles
-        default: return []
+        return sync {
+            let base: [FileEntry] = switch path {
+            case "": MockData.rootFiles
+            case "plugins": MockData.pluginFiles
+            default: []
+            }
+            let added = createdFolders.filter { ($0 as NSString).deletingLastPathComponent == path }
+                .map { FileEntry(name: ($0 as NSString).lastPathComponent, path: $0, isDirectory: true) }
+            let uploaded = uploadedFiles.filter { ($0.key as NSString).deletingLastPathComponent == path }
+                .map { FileEntry(name: ($0.key as NSString).lastPathComponent, path: $0.key, isDirectory: false,
+                                 size: $0.value, modified: nil, canOpen: false) }
+            let merged = base.filter { entry in !uploaded.contains { $0.path == entry.path } } + added + uploaded
+            return merged.filter { !deletedPaths.contains($0.path) }
+                .sorted { ($0.isDirectory ? 0 : 1, $0.name.lowercased()) < ($1.isDirectory ? 0 : 1, $1.name.lowercased()) }
         }
     }
-    func readFile(serverID: String, path: String) async throws -> String {
+    func readFile(serverID: String, path: String) async throws -> PanelFile {
         try await simulate()
-        return sync { files[path] ?? "# \(path)\n# (mock content)\n" }
+        return sync { files[path] ?? PanelFile(content: "# \(path)\n# (mock content)\n", modifiedEpoch: 1) }
     }
-    func writeFile(serverID: String, path: String, content: String) async throws {
-        try await simulate(); sync { files[path] = content }
+    func writeFile(serverID: String, path: String, content: String, modifiedEpoch: Double, overwrite: Bool) async throws -> Double {
+        try await simulate()
+        return try sync {
+            let current = files[path]?.modifiedEpoch ?? 1
+            if current > modifiedEpoch, !overwrite { throw CraftyError.fileChanged }
+            let saved = max(current, modifiedEpoch) + 1
+            files[path] = PanelFile(content: content, modifiedEpoch: saved)
+            return saved
+        }
     }
-    func createFolder(serverID: String, path: String) async throws { try await simulate() }
-    func deleteFile(serverID: String, path: String) async throws { try await simulate() }
+    func createFolder(serverID: String, parent: String, name: String) async throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        try await simulate()
+        sync {
+            let path = ServerPath.join(parent, name)
+            deletedPaths.remove(path)
+            createdFolders.insert(path)
+        }
+    }
+    func deleteFile(serverID: String, path: String) async throws {
+        try await simulate()
+        sync { createdFolders.remove(path); uploadedFiles[path] = nil; deletedPaths.insert(path) }
+    }
+    func uploadFile(serverID: String, folder: String, name: String, from file: URL,
+                    progress: @escaping @Sendable (Double) -> Void) async throws {
+        let size = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        try FileUpload.check(name: name, folder: folder, size: size)
+        let total = FileUpload.chunkCount(for: size)
+        for index in 0..<total {
+            try Task.checkCancellation()
+            try await simulate()
+            progress(Double(index + 1) / Double(total))
+        }
+        let mb = Double(size) / 1_048_576
+        sync {
+            let path = ServerPath.join(folder, name)
+            deletedPaths.remove(path)
+            uploadedFiles[path] = mb >= 1 ? String(format: "%.1fMB", mb) : String(format: "%.1fKB", Double(size) / 1024)
+        }
+    }
 
     // MARK: Webhooks
     func webhooks(serverID: String) async throws -> [Webhook] {

@@ -11,8 +11,8 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 | `Core/Networking/` | `APIClient`: bearer auth, `{status,data}` envelope (`requestUnwrapped` for routes without it), console WebSocket (`token` cookie), ephemeral `URLSession`, certificate pinning delegate |
 | `Core/Services/` | `CraftyService` protocol, `LiveCraftyService` (real API, ✅/⚠️ markers), `CraftyConsoleFeed` (WebSocket and `/logs` parsing), `MockCraftyService` + `MockData` |
 | `Core/Storage/` | `KeychainStore` (tokens), `InstanceStore` (panel list in Application Support, no secrets) |
-| `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView` (problem-specific error states), `StaleValuesBanner`, `.errorAlert`, `ConfirmAction` |
-| `Features/<Area>/` | One folder per panel area: Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |
+| `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView` (problem-specific error states), `StaleValuesBanner`, `.errorAlert`, `ConfirmAction`, `PixelAvatar` (player faces drawn locally, never loaded), `PlayerCount`, `ServerIcon` |
+| `Features/<Area>/` | One folder per panel area (Dashboard = Servers tab: `DashboardModel` holds loading and polling, `DashboardCards` the views): Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |
 | `Resources/` | `PrivacyInfo.xcprivacy`; `Assets.xcassets` (`AppIcon`, single 1024 px image rendered by `scripts/make-app-icon.swift`; `LaunchBackground` = dark `Theme.background`); generated `Info.plist` (gitignored) |
 
 ## Rules

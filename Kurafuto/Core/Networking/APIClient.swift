@@ -36,12 +36,13 @@ final class APIClient: NSObject, @unchecked Sendable {
         init(from decoder: Decoder) throws {}
     }
 
-    enum Method: String { case get = "GET", post = "POST", patch = "PATCH", delete = "DELETE" }
+    enum Method: String { case get = "GET", post = "POST", put = "PUT", patch = "PATCH", delete = "DELETE" }
 
     enum Body {
         case none
         case json(Encodable)
         case text(String)
+        case data(Data)
     }
 
     func request<T: Decodable>(_ method: Method, _ path: String, query: [URLQueryItem] = [], body: Body = .none,
@@ -73,7 +74,36 @@ final class APIClient: NSObject, @unchecked Sendable {
         catch { throw CraftyError.decoding(error) }
     }
 
-    private func perform(_ method: Method, _ path: String, query: [URLQueryItem], body: Body) async throws -> (Data, Int) {
+    /// Crafty's upload route takes raw bytes with the metadata in headers. It answers
+    /// `{"status": "ok" | "partial" | "completed"}` and reports errors as
+    /// `{"status": "error", "error": …, "data": {"message": …}}`. Returns the status.
+    func upload(_ path: String, headers: [String: String], body: Data?) async throws -> String {
+        struct Answer: Decodable {
+            struct Message: Decodable { let message: String? }
+            let status: String
+            let error: String?
+            let errorData: String?
+            let data: Message?
+            enum CodingKeys: String, CodingKey { case status, error, errorData = "error_data", data }
+            // Only `status` is required; the other fields vary between panel versions and error paths.
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                status = try c.decode(String.self, forKey: .status)
+                error = try? c.decode(String.self, forKey: .error)
+                errorData = try? c.decode(String.self, forKey: .errorData)
+                data = try? c.decode(Message.self, forKey: .data)
+            }
+        }
+        let (data, status) = try await perform(.post, path, query: [], body: body.map(Body.data) ?? .none, headers: headers)
+        let answer = try? JSONDecoder().decode(Answer.self, from: data)
+        guard (200..<300).contains(status), let answer, answer.status != "error" else {
+            throw fail(Self.failure(status: status, error: answer?.error, detail: answer?.data?.message ?? answer?.errorData, path: path))
+        }
+        return answer.status
+    }
+
+    private func perform(_ method: Method, _ path: String, query: [URLQueryItem], body: Body,
+                         headers: [String: String] = [:]) async throws -> (Data, Int) {
         guard var comps = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
             throw CraftyError.invalidURL
         }
@@ -83,6 +113,7 @@ final class APIClient: NSObject, @unchecked Sendable {
         var req = URLRequest(url: url, timeoutInterval: 20)
         req.httpMethod = method.rawValue
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        for (name, value) in headers { req.setValue(value, forHTTPHeaderField: name) }
         switch body {
         case .none: break
         case .json(let value):
@@ -91,6 +122,9 @@ final class APIClient: NSObject, @unchecked Sendable {
         case .text(let s):
             req.setValue("text/plain", forHTTPHeaderField: "Content-Type")
             req.httpBody = Data(s.utf8)
+        case .data(let d):
+            req.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            req.httpBody = d
         }
 
         let data: Data, response: URLResponse

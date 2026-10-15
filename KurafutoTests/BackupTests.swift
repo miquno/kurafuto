@@ -203,7 +203,14 @@ final class StubPanel: URLProtocol {
     struct Recorded {
         let line: String
         let json: [String: Any]?
+        var headers: [String: String] = [:]
+        var body: Data?
         var query: String? = nil
+
+        /// HTTP header names are case-insensitive; URLSession writes some in canonical form ("Location").
+        func header(_ name: String) -> String? {
+            headers.first { $0.key.caseInsensitiveCompare(name) == .orderedSame }?.value
+        }
     }
 
     nonisolated(unsafe) static var requests: [Recorded] = []
@@ -221,6 +228,7 @@ final class StubPanel: URLProtocol {
         let json = body.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
         let (status, text) = Self.lock.withLock {
             Self.requests.append(Recorded(line: "\(request.httpMethod ?? "?") \(request.url?.path ?? "")", json: json,
+                                          headers: request.allHTTPHeaderFields ?? [:], body: body,
                                           query: request.url?.query))
             return Self.responses.count > 1 ? Self.responses.removeFirst() : Self.responses.first ?? (500, "")
         }

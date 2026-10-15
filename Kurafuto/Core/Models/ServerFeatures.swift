@@ -382,20 +382,183 @@ enum WebhookTrigger: String, CaseIterable, Identifiable {
     static func label(for name: String) -> String { WebhookTrigger(rawValue: name)?.label ?? name }
 }
 
-// MARK: - Files
+// MARK: - Files  (POST/PATCH/DELETE /api/v2/servers/{id}/files, PUT …/files/create)
 
+/// An entry of a server folder. Paths are relative to the server folder, as the panel lists them.
 struct FileEntry: Identifiable, Hashable {
     var id: String { path }
     var name: String
     var path: String
     var isDirectory: Bool
-    var size: Int64?
-    var modified: Date?
+    /// The panel's own formatting, e.g. "1.6KB".
+    var size: String?
+    /// "yyyy/MM/dd HH:mm" in the panel host's time.
+    var modified: String?
+    /// The panel's guess whether its text editor can open the file (files only).
+    var canOpen: Bool?
+
+    /// Larger files are not opened in the app: the panel sends the whole file in one JSON answer.
+    static let maxEditableBytes = 1_048_576
 
     var isEditableText: Bool {
-        guard !isDirectory else { return false }
+        guard !isDirectory, canOpen != false, (approximateBytes ?? 0) <= Self.maxEditableBytes else { return false }
         let ext = (name as NSString).pathExtension.lowercased()
         return ["properties", "txt", "json", "yml", "yaml", "toml", "cfg", "conf", "log", "ini", "sh", "bat", "mcmeta", ""].contains(ext)
+    }
+
+    /// Bytes from the panel's "%3.1f" + K/M/G… + "B" size string.
+    var approximateBytes: Int? {
+        guard let size = size?.trimmingCharacters(in: .whitespaces), size.hasSuffix("B") else { return nil }
+        var number = String(size.dropLast())
+        var factor = 1.0
+        if let unit = number.last, let power = ["K", "M", "G", "T", "P"].firstIndex(of: String(unit)) {
+            factor = pow(1024, Double(power + 1))
+            number.removeLast()
+        }
+        return Double(number).map { Int($0 * factor) }
+    }
+}
+
+/// The panel lists a folder as an object keyed by file name, plus a `root_path` entry. Entries that are not a
+/// single name directly inside the requested folder are dropped, so nothing the panel sends can point elsewhere.
+struct FolderListing: Decodable {
+    let entries: [FileEntry]
+
+    private struct Raw: Decodable {
+        let path: String
+        let dir: Bool
+        let size: String?
+        let modified: String?
+        let canOpen: Bool?
+        enum CodingKeys: String, CodingKey { case path, dir, size, modified, canOpen = "can_open" }
+    }
+
+    private struct Root: Decodable {
+        let localPath: String
+        enum CodingKeys: String, CodingKey { case localPath = "local_path" }
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: DynamicKey.self)
+        let folder = (try? c.decode(Root.self, forKey: "root_path"))?.localPath ?? ""
+        entries = c.allKeys.filter { $0.stringValue != "root_path" }.compactMap { key in
+            guard let raw = try? c.decode(Raw.self, forKey: key) else { return nil }
+            let name = key.stringValue
+            let path = raw.path
+            guard ServerPath.isValidName(name), path == ServerPath.join(folder, name) else { return nil }
+            return FileEntry(name: name, path: path, isDirectory: raw.dir, size: raw.size?.trimmingCharacters(in: .whitespaces),
+                             modified: raw.modified, canOpen: raw.dir ? nil : raw.canOpen)
+        }
+        .sorted { ($0.isDirectory ? 0 : 1, $0.name.lowercased()) < ($1.isDirectory ? 0 : 1, $1.name.lowercased()) }
+    }
+
+    init(entries: [FileEntry]) { self.entries = entries }
+}
+
+/// Paths relative to the server folder.
+enum ServerPath {
+    static func join(_ folder: String, _ name: String) -> String { folder.isEmpty ? name : folder + "/" + name }
+
+    /// A single file or folder name: no separators, no "." or "..", no control characters.
+    static func isValidName(_ name: String) -> Bool {
+        !name.isEmpty && name.count <= 255 && name != "." && name != ".."
+            && !name.contains("/") && !name.contains("\\")
+            && !name.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) }
+    }
+}
+
+/// Limits for uploads into a server folder (`POST …/files/upload`).
+enum FileUpload {
+    /// Plugins, mods and datapacks are far smaller. Whole worlds and modpacks belong in the web panel or SFTP,
+    /// where a dropped mobile connection does not cost the whole transfer.
+    static let maxBytes = 500 * 1_048_576
+    /// The web panel sends 10 MB pieces; smaller ones survive a weak mobile connection better.
+    static let chunkBytes = 5 * 1_048_576
+
+    static func chunkCount(for size: Int) -> Int { (size + chunkBytes - 1) / chunkBytes }
+
+    /// Throws when the app should not send the file. The panel reads `fileName` and `location` from HTTP
+    /// headers, which carry ASCII only (browsers refuse anything else as well).
+    static func check(name: String, folder: String, size: Int) throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        guard name.allSatisfy(\.isASCII) else {
+            throw CraftyError.uploadRefused("Rename the file to use only English letters, digits and simple punctuation.")
+        }
+        guard folder.allSatisfy(\.isASCII) else {
+            throw CraftyError.uploadRefused("Files can only be uploaded into folders with plain ASCII names.")
+        }
+        guard size > 0 else { throw CraftyError.uploadRefused("The file is empty.") }
+        guard size <= maxBytes else {
+            throw CraftyError.uploadRefused("Files larger than \(maxBytes / 1_048_576) MB can be uploaded in the web panel.")
+        }
+    }
+}
+
+/// A text file as read from the panel. `modifiedEpoch` goes back with the save, so the panel can refuse
+/// to overwrite a file that changed in the meantime.
+struct PanelFile: Decodable, Hashable {
+    var content: String
+    var modifiedEpoch: Double
+
+    enum CodingKeys: String, CodingKey { case content, attributes }
+    private struct Attributes: Decodable {
+        let modifiedEpoch: Double
+        enum CodingKeys: String, CodingKey { case modifiedEpoch = "modified_epoch" }
+    }
+
+    init(content: String, modifiedEpoch: Double) { self.content = content; self.modifiedEpoch = modifiedEpoch }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        content = try c.decode(String.self, forKey: .content)
+        modifiedEpoch = try c.decode(Attributes.self, forKey: .attributes).modifiedEpoch
+    }
+}
+
+/// `server.properties` edited in place: only the values of `key=value` lines change, so comments,
+/// order and unknown lines stay as the server wrote them.
+struct ServerProperties: Equatable {
+    private var lines: [Line]
+    private let trailingNewline: Bool
+
+    private enum Line: Equatable {
+        case entry(key: String, value: String)
+        case other(String)
+    }
+
+    init(_ text: String) {
+        trailingNewline = text.hasSuffix("\n")
+        lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+            .dropLast(text.hasSuffix("\n") ? 1 : 0)
+            .map { raw in
+                let line = String(raw)
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("#"), !trimmed.hasPrefix("!"), let eq = line.firstIndex(of: "=") else { return .other(line) }
+                return .entry(key: String(line[..<eq]), value: String(line[line.index(after: eq)...]))
+            }
+    }
+
+    var entries: [(key: String, value: String)] {
+        lines.compactMap { if case .entry(let k, let v) = $0 { (k, v) } else { nil } }
+    }
+
+    subscript(key: String) -> String? {
+        get { entries.first { $0.key == key }?.value }
+        set {
+            guard let newValue, let i = lines.firstIndex(where: { if case .entry(key, _) = $0 { true } else { false } }) else { return }
+            // A value is one line; a pasted line break would start a new, unintended property.
+            lines[i] = .entry(key: key, value: newValue.replacingOccurrences(of: "\r", with: "").replacingOccurrences(of: "\n", with: " "))
+        }
+    }
+
+    var text: String {
+        lines.map { line in
+            switch line {
+            case .entry(let k, let v): "\(k)=\(v)"
+            case .other(let raw): raw
+            }
+        }
+        .joined(separator: "\n") + (trailingNewline ? "\n" : "")
     }
 }
 

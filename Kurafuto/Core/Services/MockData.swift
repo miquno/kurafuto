@@ -121,21 +121,21 @@ enum MockData {
     }
 
     static let rootFiles: [FileEntry] = [
-        FileEntry(name: "world", path: "world", isDirectory: true),
-        FileEntry(name: "world_nether", path: "world_nether", isDirectory: true),
-        FileEntry(name: "plugins", path: "plugins", isDirectory: true),
-        FileEntry(name: "logs", path: "logs", isDirectory: true),
-        FileEntry(name: "server.properties", path: "server.properties", isDirectory: false, size: 1_420, modified: .now),
-        FileEntry(name: "ops.json", path: "ops.json", isDirectory: false, size: 210, modified: .now),
-        FileEntry(name: "whitelist.json", path: "whitelist.json", isDirectory: false, size: 340, modified: .now),
-        FileEntry(name: "eula.txt", path: "eula.txt", isDirectory: false, size: 158, modified: .now),
-        FileEntry(name: "paper-1.21.4.jar", path: "paper-1.21.4.jar", isDirectory: false, size: 51_200_000, modified: .now),
+        FileEntry(name: "logs", path: "logs", isDirectory: true, modified: "2026/10/14 20:17"),
+        FileEntry(name: "plugins", path: "plugins", isDirectory: true, modified: "2026/10/12 18:40"),
+        FileEntry(name: "world", path: "world", isDirectory: true, modified: "2026/10/15 09:58"),
+        FileEntry(name: "world_nether", path: "world_nether", isDirectory: true, modified: "2026/10/15 09:58"),
+        FileEntry(name: "eula.txt", path: "eula.txt", isDirectory: false, size: "158.0B", modified: "2026/05/18 19:02", canOpen: true),
+        FileEntry(name: "ops.json", path: "ops.json", isDirectory: false, size: "210.0B", modified: "2026/09/30 21:15", canOpen: true),
+        FileEntry(name: "paper-1.21.4.jar", path: "paper-1.21.4.jar", isDirectory: false, size: "48.8MB", modified: "2026/10/01 08:00", canOpen: false),
+        FileEntry(name: "server.properties", path: "server.properties", isDirectory: false, size: "1.4KB", modified: "2026/10/14 20:17", canOpen: true),
+        FileEntry(name: "whitelist.json", path: "whitelist.json", isDirectory: false, size: "340.0B", modified: "2026/10/02 17:30", canOpen: true),
     ]
 
     static let pluginFiles: [FileEntry] = [
-        FileEntry(name: "EssentialsX.jar", path: "plugins/EssentialsX.jar", isDirectory: false, size: 3_100_000),
-        FileEntry(name: "LuckPerms.jar", path: "plugins/LuckPerms.jar", isDirectory: false, size: 2_200_000),
-        FileEntry(name: "Essentials", path: "plugins/Essentials", isDirectory: true),
+        FileEntry(name: "Essentials", path: "plugins/Essentials", isDirectory: true, modified: "2026/10/12 18:40"),
+        FileEntry(name: "EssentialsX.jar", path: "plugins/EssentialsX.jar", isDirectory: false, size: "3.0MB", modified: "2026/10/12 18:39", canOpen: false),
+        FileEntry(name: "LuckPerms.jar", path: "plugins/LuckPerms.jar", isDirectory: false, size: "2.1MB", modified: "2026/10/12 18:39", canOpen: false),
     ]
 
     static let serverProperties = """
