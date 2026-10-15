@@ -8,8 +8,8 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 |---|---|
 | `App/` | `KurafutoApp`, `AppState` (active panel + service + panel rights + app lock), `RootView` (incl. app-switcher privacy cover and lock screen), tabs; `AppLock` (Face ID / passcode via LocalAuthentication), `.destructiveConfirmation` |
 | `Core/Models/` | `Codable` models that mirror Crafty's `openapi-spec.yml` (snake_case `CodingKeys`). Tolerant decoding for Crafty's string-typed numbers |
-| `Core/Networking/` | `APIClient`: bearer auth, `{status,data}` envelope, ephemeral `URLSession`, certificate pinning delegate |
-| `Core/Services/` | `CraftyService` protocol, `LiveCraftyService` (real API, ✅/⚠️ markers), `MockCraftyService` + `MockData` |
+| `Core/Networking/` | `APIClient`: bearer auth, `{status,data}` envelope, console WebSocket (`token` cookie), ephemeral `URLSession`, certificate pinning delegate |
+| `Core/Services/` | `CraftyService` protocol, `LiveCraftyService` (real API, ✅/⚠️ markers), `CraftyConsoleFeed` (WebSocket and `/logs` parsing), `MockCraftyService` + `MockData` |
 | `Core/Storage/` | `KeychainStore` (tokens), `InstanceStore` (panel list in Application Support, no secrets) |
 | `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView`, `ConfirmAction` |
 | `Features/<Area>/` | One folder per panel area: Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |

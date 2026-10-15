@@ -31,7 +31,7 @@ against local test panels **4.7.0** and **4.11.0** (official Docker images, Pape
 | announcements / clear | `GET/POST /api/v2/crafty/announcements` | ✅ | – |
 | backupConfigs, backupFiles, restore, delete | `/api/v2/servers/{id}/backups/…` | ⚠️ | – |
 | listFiles, readFile, writeFile, createFolder, deleteFile | `/api/v2/servers/{id}/files/…` (since 4.7 incl. copy/move) | ⚠️ | – |
-| consoleStream | web panel WebSocket `/ws` | ⚠️ undocumented, polling as fallback | ✅ polling |
+| consoleStream | `GET /logs` backlog, then WebSocket `/ws?page=/panel/server_detail&page_query_params=?id={id}` | ⚠️ undocumented, polling `/logs` as fallback | ✅ socket and fallback |
 
 ## Quirks found on real panels
 
@@ -42,6 +42,8 @@ Captured responses from 4.11.0 are pinned in `KurafutoTests/CraftyResponseTests.
 - **Stats `mem`:** 4.7.0 sends a formatted string (`"1.4GB"`), 4.11.0 a byte count (`1480200192.0`).
 - **Stats `started`:** `yyyy-MM-dd HH:mm:ss` in **UTC**, while `created` is ISO 8601 in panel-local time.
 - **Logs:** HTML-escaped (Python `html.escape`) unless `raw=true`, which also keeps ANSI codes. The app unescapes the five entities and shows plain text.
+- **Console WebSocket:** not in the spec; ported from `websocket_handler.py` and `ServerOutBuf.new_line_handler`. Auth is the `token` cookie only (no header, no query); an invalid token is accepted at the handshake and closed right after. The server pushes `{"event":"vterm_new_line","data":{"line":…}}` – the line is HTML-escaped, wrapped in `<span>` highlight tags and ends with `<br />`; 4.11.0 batches up to 20 stdout lines per message, separated by `\n`. Only new lines are sent, so the backlog comes from `/logs`. 4.11.0 sends console lines only to users with the server's TERMINAL permission. Other events on the same socket (`update_server_details`, `notification`, …) are ignored for now. Pings are answered; the panel sends nothing while a server is idle.
+- **Logs buffer:** `/logs` without `file` returns a sliding window of `virtual_terminal_lines` (default 70), so polling diffs by overlap, not by count.
 - **EULA:** a new Java server only starts after `POST …/action/eula`. The app does not offer this yet; servers created in the app must be accepted in the web panel first.
 - **Backup:** `action/backup_server` without an id uses the default backup config on 4.11.0. On 4.7.0 it answers `ok` but the backup fails inside the panel (`BackupsDoesNotExist`); it needs `action/backup_server/{backup_id}`. To be fixed together with the backups item in 0.3.
 
