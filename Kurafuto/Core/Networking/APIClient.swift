@@ -36,7 +36,7 @@ final class APIClient: NSObject, @unchecked Sendable {
         init(from decoder: Decoder) throws {}
     }
 
-    enum Method: String { case get = "GET", post = "POST", patch = "PATCH", delete = "DELETE" }
+    enum Method: String { case get = "GET", post = "POST", put = "PUT", patch = "PATCH", delete = "DELETE" }
 
     enum Body {
         case none

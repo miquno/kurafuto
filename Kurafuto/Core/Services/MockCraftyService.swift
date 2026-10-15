@@ -12,7 +12,9 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     /// Keyed by "serverID/configID".
     private var backups: [String: [BackupFile]] = [:]
     private var webhooks: [String: [Webhook]] = [:]
-    private var files: [String: String] = ["server.properties": MockData.serverProperties]
+    private var files: [String: PanelFile] = ["server.properties": PanelFile(content: MockData.serverProperties, modifiedEpoch: 1)]
+    private var createdFolders: Set<String> = []
+    private var deletedPaths: Set<String> = []
     private var users = MockData.users
     private var roles = MockData.roles
     private var announcementList = MockData.announcements
@@ -293,21 +295,44 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
     // MARK: Files
     func listFiles(serverID: String, path: String) async throws -> [FileEntry] {
         try await simulate()
-        switch path {
-        case "", "/": return MockData.rootFiles
-        case "plugins": return MockData.pluginFiles
-        default: return []
+        return sync {
+            let base: [FileEntry] = switch path {
+            case "": MockData.rootFiles
+            case "plugins": MockData.pluginFiles
+            default: []
+            }
+            let added = createdFolders.filter { ($0 as NSString).deletingLastPathComponent == path }
+                .map { FileEntry(name: ($0 as NSString).lastPathComponent, path: $0, isDirectory: true) }
+            return (base + added).filter { !deletedPaths.contains($0.path) }
         }
     }
-    func readFile(serverID: String, path: String) async throws -> String {
+    func readFile(serverID: String, path: String) async throws -> PanelFile {
         try await simulate()
-        return sync { files[path] ?? "# \(path)\n# (mock content)\n" }
+        return sync { files[path] ?? PanelFile(content: "# \(path)\n# (mock content)\n", modifiedEpoch: 1) }
     }
-    func writeFile(serverID: String, path: String, content: String) async throws {
-        try await simulate(); sync { files[path] = content }
+    func writeFile(serverID: String, path: String, content: String, modifiedEpoch: Double, overwrite: Bool) async throws -> Double {
+        try await simulate()
+        return try sync {
+            let current = files[path]?.modifiedEpoch ?? 1
+            if current > modifiedEpoch, !overwrite { throw CraftyError.fileChanged }
+            let saved = max(current, modifiedEpoch) + 1
+            files[path] = PanelFile(content: content, modifiedEpoch: saved)
+            return saved
+        }
     }
-    func createFolder(serverID: String, path: String) async throws { try await simulate() }
-    func deleteFile(serverID: String, path: String) async throws { try await simulate() }
+    func createFolder(serverID: String, parent: String, name: String) async throws {
+        guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
+        try await simulate()
+        sync {
+            let path = ServerPath.join(parent, name)
+            deletedPaths.remove(path)
+            createdFolders.insert(path)
+        }
+    }
+    func deleteFile(serverID: String, path: String) async throws {
+        try await simulate()
+        sync { createdFolders.remove(path); deletedPaths.insert(path) }
+    }
 
     // MARK: Webhooks
     func webhooks(serverID: String) async throws -> [Webhook] {
