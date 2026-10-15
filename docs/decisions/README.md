@@ -15,6 +15,7 @@ Write an ADR when a change adds a dependency, changes a trust boundary, adds a n
 | [0007](0007-name-and-icon-outside-mit.md) | Name and app icon are not covered by the MIT licence | Accepted, amended by 0008 |
 | [0008](0008-no-trademark-registration.md) | No trademark registration | Accepted |
 | [0009](0009-widgets-read-a-cached-snapshot.md) | Widgets read a cached snapshot from an App Group | Accepted |
+| [0010](0010-siri-and-shortcuts-actions.md) | Siri and Shortcuts actions run inside the app | Accepted |
 
 ## Template
 

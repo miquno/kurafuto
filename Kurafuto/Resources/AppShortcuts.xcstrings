@@ -1,0 +1,126 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "How many players are on ${server} in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Wie viele Spieler sind auf ${server} in ${applicationName}",
+              "Spielerzahl in ${applicationName}"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "How many players are on ${server} in ${applicationName}",
+              "Player count in ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}で${server}のプレイヤー数",
+              "${applicationName}のプレイヤー数"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}中${server}上有多少玩家",
+              "${applicationName}中的玩家人数"
+            ]
+          }
+        }
+      }
+    },
+    "Start ${server} in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${server} in ${applicationName} starten",
+              "Server in ${applicationName} starten"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Start ${server} in ${applicationName}",
+              "Start a server in ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}で${server}を起動",
+              "${applicationName}でサーバーを起動"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "在${applicationName}中启动${server}",
+              "在${applicationName}中启动服务器"
+            ]
+          }
+        }
+      }
+    },
+    "Stop ${server} in ${applicationName}" : {
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${server} in ${applicationName} stoppen",
+              "Server in ${applicationName} stoppen"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Stop ${server} in ${applicationName}",
+              "Stop a server in ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}で${server}を停止",
+              "${applicationName}でサーバーを停止"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "在${applicationName}中停止${server}",
+              "在${applicationName}中停止服务器"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

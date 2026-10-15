@@ -52,9 +52,13 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 
 `KurafutoWidgets` is a WidgetKit extension with five widgets, laid out after the maintainer's mocks: Server (small, medium, large, Lock Screen rectangular and inline), Server Load (small, Lock Screen rectangular), Players (medium), Backup (small) and Panel (medium, large, Lock Screen circular and inline). Widgets for one server are configured with `SelectServerIntent`. The extension never talks to a panel and has no token. After each successful refresh, the Servers tab hands its servers, stats, history and newest backups to `WidgetSync`, which writes a `WidgetSnapshot` into the shared App Group container (right away for status, player and backup changes, every five minutes for live load) and reloads the timelines. While widgets are placed, the Servers tab loads the last hour of every server once per load, and the newest backup only for a placed backup widget. Signing out and switching panels clear the snapshot. A widget opens `kurafuto://server/<id>[/console|/details]`; `RootView` passes it on, and the Servers tab opens that server only if the panel lists it (ADR 0009). The extension shares `WidgetSnapshot.swift`, `ServerStats.swift`, `Palette.swift` and the String Catalog with the app.
 
+## Siri and Shortcuts
+
+`Features/Shortcuts/ServerShortcuts.swift` defines the App Intents Start Server, Stop Server and Player Count, their `PanelServerEntity` (listed live from the active panel) and the App Shortcuts phrases. They run in the app's process: `KurafutoApp` hands its `AppState` to `ServerShortcuts` at launch, also when iOS starts the app in the background for an action, and the intents use the active panel's service. All need an unlocked device; Stop asks for confirmation and goes through `AppLock.authorize` (ADR 0010). The Servers tab updates the App Shortcuts parameters after loading, so Siri knows the server names.
+
 ## Localization
 
-All UI text is English in code and translated in `Kurafuto/Resources/Localizable.xcstrings` (String Catalog: German, Japanese, Simplified Chinese, with plural variations); the permission prompts are in `InfoPlist.xcstrings`. The compiler records every localizable string (`SWIFT_EMIT_LOC_STRINGS`), and CI's `scripts/check-localizations.sh` fails when the catalog and the code drift apart or a translation is missing. Panel data is never translated or looked up as a key.
+All UI text is English in code and translated in `Kurafuto/Resources/Localizable.xcstrings` (String Catalog: German, Japanese, Simplified Chinese, with plural variations); the permission prompts are in `InfoPlist.xcstrings` and the Siri phrases in `AppShortcuts.xcstrings`. The compiler records every localizable string (`SWIFT_EMIT_LOC_STRINGS`), and CI's `scripts/check-localizations.sh` fails when the catalog and the code drift apart or a translation is missing. Panel data is never translated or looked up as a key.
 
 ## Decisions
 

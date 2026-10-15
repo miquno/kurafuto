@@ -31,6 +31,10 @@ Your password is never stored; it is only used once to obtain a token from your 
 
 You can remove everything by signing out of a panel in Settings or by deleting the app. Signing out or switching panels also clears the widget summary.
 
+## Siri and Shortcuts
+
+If you use Kurafuto with Siri or Shortcuts, the actions run inside the app on your iPhone and talk only to your panel. To recognize your servers by name, iOS learns their names from Kurafuto; Siri requests are handled by Apple under its own privacy terms. Your panel token never leaves the app.
+
 ## Your panel
 
 Your panel is operated by you (or whoever runs it). What the panel logs or stores – for example sign-in attempts or IP addresses – is governed by that panel and its operator, not by Kurafuto.

@@ -72,6 +72,8 @@ struct DashboardView: View {
                 openRequestedServer()
             }
             .onChange(of: app.requestedServer) { openRequestedServer() }
+            // Lets Siri recognise server names in "Start <server> in Kurafuto".
+            .onChange(of: model.servers.value?.map(\.serverName)) { KurafutoShortcuts.updateAppShortcutParameters() }
         }
     }
 
