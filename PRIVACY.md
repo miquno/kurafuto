@@ -23,12 +23,13 @@ Kurafuto connects **only** to the panel address you enter. Everything you do in 
 | Access token for your panel | iOS Keychain, this device only | So you stay signed in |
 | Panel name, address, username, certificate fingerprint | App storage, encrypted by iOS | So you can switch between panels |
 | App settings (e.g. Face ID lock, refresh interval) | App storage | Your preferences |
+| For widgets: panel name, server names, status and player counts, time of the values, your color theme | Storage shared only between the app and its widgets, readable after the first unlock | So the widgets can show your servers without contacting the panel |
 
 Face ID, Touch ID and your passcode are checked by iOS; Kurafuto only learns whether the check succeeded and never sees biometric data.
 
-Your password is never stored; it is only used once to obtain a token from your panel. Server data, logs and files are shown while you look at them and are not saved by Kurafuto.
+Your password is never stored; it is only used once to obtain a token from your panel. Server data, logs and files are shown while you look at them and are not saved by Kurafuto, except the short widget summary above. Widgets never contact your panel, and they never show player names, the panel address or your username. If the Face ID lock is on, iOS hides widget content while your iPhone is locked.
 
-You can remove everything by signing out of a panel in Settings or by deleting the app.
+You can remove everything by signing out of a panel in Settings or by deleting the app. Signing out or switching panels also clears the widget summary.
 
 ## Your panel
 

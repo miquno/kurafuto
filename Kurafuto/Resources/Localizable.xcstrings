@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@" : {
+      "shouldTranslate" : false
+    },
     "%@ (you)" : {
       "localizations" : {
         "de" : {
@@ -1753,6 +1756,28 @@
         }
       }
     },
+    "Choose Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server auswählen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーを選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择服务器"
+          }
+        }
+      }
+    },
     "Choose a color." : {
       "localizations" : {
         "de" : {
@@ -1793,6 +1818,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请选择服务。"
+          }
+        }
+      }
+    },
+    "Choose the server this widget shows." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle den Server, den dieses Widget zeigt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このウィジェットに表示するサーバーを選択します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择此小组件显示的服务器。"
           }
         }
       }
@@ -5647,6 +5694,28 @@
         }
       }
     },
+    "Open Kurafuto to show your servers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Kurafuto, um deine Server anzuzeigen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto を開くとサーバーが表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 Kurafuto 以显示你的服务器。"
+          }
+        }
+      }
+    },
     "Open Web Panel" : {
       "localizations" : {
         "de" : {
@@ -6089,6 +6158,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "玩家"
+          }
+        }
+      }
+    },
+    "Players online" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler online"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンラインのプレイヤー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在线玩家"
           }
         }
       }
@@ -7811,6 +7902,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "启动"
+          }
+        }
+      }
+    },
+    "Status and players of every server on your panel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status und Spieler aller Server deines Panels."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パネル上のすべてのサーバーのステータスとプレイヤー。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "面板上所有服务器的状态和玩家。"
+          }
+        }
+      }
+    },
+    "Status and players of one server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status und Spieler eines Servers."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 台のサーバーのステータスとプレイヤー。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单台服务器的状态和玩家。"
           }
         }
       }

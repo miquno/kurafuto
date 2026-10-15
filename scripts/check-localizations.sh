@@ -11,9 +11,10 @@ languages="de ja zh-Hans"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-# The compiler records every localizable string of the app target in .stringsdata files; syncing a copy
-# (same file name, so the table matches) shows what Xcode would add or mark stale.
-find "$derived" -path '*-iphonesimulator/Kurafuto.build/*' -name '*.stringsdata' -print0 > "$tmp/stringsdata"
+# The compiler records every localizable string of the app and widget targets (they share the catalog) in
+# .stringsdata files; syncing a copy (same file name, so the table matches) shows what Xcode would add or mark stale.
+find "$derived" \( -path '*-iphonesimulator/Kurafuto.build/*' -o -path '*-iphonesimulator/KurafutoWidgets.build/*' \) \
+  -name '*.stringsdata' -print0 > "$tmp/stringsdata"
 if [ ! -s "$tmp/stringsdata" ]; then
   echo "::error::No .stringsdata files under $derived. Build the Kurafuto target first."
   exit 1

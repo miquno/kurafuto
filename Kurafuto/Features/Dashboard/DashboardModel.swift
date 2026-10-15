@@ -13,6 +13,8 @@ final class DashboardModel {
     private(set) var consoleTail: [String: [String]] = [:]
     /// Set when no server's stats could be loaded, so the values on screen are stale.
     private(set) var liveProblem: PanelProblem?
+    /// When live values last arrived from the panel; the widgets are updated from it.
+    private(set) var lastRefresh: Date?
     private(set) var busy: (serverID: String, action: ServerAction)?
     var selectedID: String?
     var actionError: Error?
@@ -102,6 +104,7 @@ final class DashboardModel {
         }
         // Only when nothing came back: a single failing server is shown by its own status.
         liveProblem = problems.count == list.count ? problems.first : nil
+        if liveProblem == nil { lastRefresh = .now }
         if let server = selected { await refreshConsole(server) }
     }
 

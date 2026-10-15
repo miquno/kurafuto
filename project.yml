@@ -35,6 +35,8 @@ targets:
       properties:
         CFBundleDisplayName: Kurafuto
         CFBundleDevelopmentRegion: en
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Matches Theme.background in the default dark mode, so launch does not flash white.
         UILaunchScreen:
           UIColorName: LaunchBackground
@@ -42,9 +44,48 @@ targets:
         NSLocalNetworkUsageDescription: "Kurafuto connects to your self-hosted server panel on your local network."
         NSFaceIDUsageDescription: "Unlock Kurafuto with Face ID before controlling your servers."
         ITSAppUsesNonExemptEncryption: false
+        # Widgets open a server with kurafuto://server/<id>.
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.miquno.kurafuto
+            CFBundleURLSchemes: [kurafuto]
+    entitlements:
+      path: Kurafuto/Resources/Kurafuto.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.miquno.kurafuto]
+    dependencies:
+      - target: KurafutoWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto
+  KurafutoWidgets:
+    type: app-extension
+    platform: iOS
+    # Reads only the widget snapshot the app writes (ADR 0009); these app files are shared with it.
+    sources:
+      - path: KurafutoWidgets
+        excludes:
+          - "**/AGENTS.md"
+          - "**/CLAUDE.md"
+      - Kurafuto/Core/Storage/WidgetSnapshot.swift
+      - Kurafuto/Core/Models/ServerStats.swift
+      - Kurafuto/DesignSystem/Palette.swift
+      - Kurafuto/Resources/Localizable.xcstrings
+    info:
+      path: KurafutoWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Kurafuto
+        # Must match the app's version for App Store validation.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: KurafutoWidgets/KurafutoWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.miquno.kurafuto]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto.widgets
   KurafutoTests:
     type: bundle.unit-test
     platform: iOS

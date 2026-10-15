@@ -67,6 +67,11 @@ struct DashboardView: View {
                 storedSelection = id ?? ""
                 Task { await model.selectionChanged() }
             }
+            .onChange(of: model.lastRefresh) {
+                publishWidgets()
+                openRequestedServer()
+            }
+            .onChange(of: app.requestedServerID) { openRequestedServer() }
         }
     }
 
@@ -115,6 +120,25 @@ struct DashboardView: View {
                     .buttonStyle(InstrumentButtonStyle()).frame(width: 180)
             }
         }
+    }
+
+    // MARK: Widgets
+
+    private func publishWidgets() {
+        guard let servers = model.servers.value, let panel = app.activeInstance else { return }
+        let look = Appearance.shared
+        WidgetSync.publish(WidgetSync.snapshot(panelName: panel.name, servers: servers, stats: model.stats,
+                                               isPrivate: app.lock.isEnabled, mode: look.mode,
+                                               accent: look.preset(for: .accent)))
+    }
+
+    /// Only a server this panel lists is selected; a link to anything else is dropped.
+    private func openRequestedServer() {
+        guard let id = app.requestedServerID, let servers = model.servers.value else { return }
+        app.requestedServerID = nil
+        guard servers.contains(where: { $0.id == id }) else { return }
+        model.selectedID = id
+        path = NavigationPath()
     }
 
     // MARK: Actions

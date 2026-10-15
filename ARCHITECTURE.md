@@ -31,6 +31,7 @@ Kurafuto is a single-target SwiftUI app with no backend of its own and no third-
 | Password, 2FA code | Memory during sign-in only | Only to that panel's login endpoint |
 | Panel list (name, URL, username, pinned cert hash) | `Application Support/instances.json`, complete file protection | Never (part of the user's own device backup) |
 | App preferences (Face ID toggle, refresh interval) | `UserDefaults` | Never |
+| Widget snapshot (panel name, server names, status, player counts, time, theme, app-lock flag) | App Group container `widget-snapshot.json`, `completeUntilFirstUserAuthentication` | Never (ADR 0009) |
 | Server data, logs, files | Memory while displayed | Never stored by Kurafuto |
 
 Kurafuto has no server, no analytics and no third-party network calls. See `PRIVACY.md` and ADR 0002.
@@ -46,6 +47,10 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 ## App lock
 
 `AppState.lock` (`AppLock`) wraps LocalAuthentication's `deviceOwnerAuthentication`, so Face ID or Touch ID falls back to the device passcode. When the lock is on, `RootView` covers the app with `LockView` at launch and after the scene went to the background (not on `.inactive`, which the Face ID prompt itself triggers). Destructive actions go through `.destructiveConfirmation` or `lock.authorize(_:)`. iOS answers only yes or no; no biometric data reaches the app.
+
+## Widgets
+
+`KurafutoWidgets` is a WidgetKit extension: a server widget (Home Screen small, Lock Screen circular and rectangular, server chosen in the widget's settings) and a panel list (medium). It never talks to a panel and has no token. After each successful refresh, the Servers tab hands its servers and stats to `WidgetSync`, which writes a `WidgetSnapshot` into the shared App Group container when something changed (or every five minutes) and reloads the timelines. Signing out and switching panels clear it. A widget tap opens `kurafuto://server/<id>`; `RootView` passes the id on, and the Servers tab selects it only if the panel lists that server (ADR 0009). The extension shares `WidgetSnapshot.swift`, `ServerStats.swift`, `Palette.swift` and the String Catalog with the app.
 
 ## Localization
 

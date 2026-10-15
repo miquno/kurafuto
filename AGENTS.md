@@ -30,7 +30,7 @@ Entry point for anyone – human or coding agent – changing Kurafuto. This fil
 - `docs/decisions/` – architecture decision records (ADRs)
 - `docs/api/crafty-api-v2.md` – endpoint map, ✅ documented vs ⚠️ unverified
 - `docs/app-store/` – naming, legal notes, store listing
-- Folder-local docs: `Kurafuto/AGENTS.md`, `KurafutoTests/AGENTS.md`, `site/AGENTS.md`, `scripts/AGENTS.md`, `.github/AGENTS.md`
+- Folder-local docs: `Kurafuto/AGENTS.md`, `KurafutoWidgets/AGENTS.md`, `KurafutoTests/AGENTS.md`, `site/AGENTS.md`, `scripts/AGENTS.md`, `.github/AGENTS.md`
 
 ## Engineering rules
 
