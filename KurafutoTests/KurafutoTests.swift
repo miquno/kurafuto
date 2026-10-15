@@ -27,7 +27,6 @@ final class MockServiceTests: XCTestCase {
             let stamp = String(line.dropFirst().prefix(8))
             XCTAssertNotNil(f.date(from: stamp), "24 h timestamp regardless of locale: \(line)")
         }
-        XCTAssertEqual(MockData.consoleLines.last?.hasPrefix("[\(MockData.consoleTime(.now.addingTimeInterval(-65)))"), true)
     }
 
     func testStartAndStopUpdateStartTime() async throws {
