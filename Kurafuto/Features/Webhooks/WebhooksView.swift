@@ -6,6 +6,7 @@ struct WebhooksView: View {
     let server: Server
     @State private var state: Loadable<[Webhook]> = .idle
     @State private var editing: Webhook?
+    @State private var confirm: ConfirmAction?
 
     var body: some View {
         LoadableView(state: state, retry: load) { hooks in
@@ -29,7 +30,12 @@ struct WebhooksView: View {
                         }
                     }
                     .onDelete { idx in
-                        Task { for i in idx { try? await app.service.deleteWebhook(id: hooks[i].id, serverID: server.id) }; await load() }
+                        let doomed = idx.map { hooks[$0] }
+                        confirm = ConfirmAction(title: doomed.count == 1 ? "Delete webhook?" : "Delete \(doomed.count) webhooks?",
+                                                message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
+                            for h in doomed { try? await app.service.deleteWebhook(id: h.id, serverID: server.id) }
+                            await load()
+                        }
                     }
                 }
                 .themedRows()
@@ -39,6 +45,7 @@ struct WebhooksView: View {
             .overlay { if hooks.isEmpty { ContentUnavailableView("No Webhooks", systemImage: "bell.slash") } }
         }
         .navigationTitle("Webhooks")
+        .destructiveConfirmation($confirm)
         .toolbar {
             Button {
                 editing = Webhook(id: 0, webhookType: .discord, name: "", url: "", botName: "Server Bot",
