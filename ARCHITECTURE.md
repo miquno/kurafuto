@@ -39,6 +39,10 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 
 `LiveCraftyService.consoleStream` loads the console backlog from `/logs`, then follows the panel's undocumented WebSocket `/ws` – the same one the web panel uses, on the same host and pinned session, authenticated with the `token` cookie. Parsing lives in `CraftyConsoleFeed`. If the socket is refused, drops or stops answering pings, the stream falls back to polling `/logs` every 2 seconds. Starting a server also opens the socket briefly, because the panel reports a missing Minecraft EULA only there. Stats are still polled from `/stats`. Everything stops when the view disappears (`.task` cancellation).
 
+## App lock
+
+`AppState.lock` (`AppLock`) wraps LocalAuthentication's `deviceOwnerAuthentication`, so Face ID or Touch ID falls back to the device passcode. When the lock is on, `RootView` covers the app with `LockView` at launch and after the scene went to the background (not on `.inactive`, which the Face ID prompt itself triggers). Destructive actions go through `.destructiveConfirmation` or `lock.authorize(_:)`. iOS answers only yes or no; no biometric data reaches the app.
+
 ## Decisions
 
 See `docs/decisions/`.

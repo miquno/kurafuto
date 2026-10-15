@@ -6,7 +6,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 
 | Folder | Owns |
 |---|---|
-| `App/` | `KurafutoApp`, `AppState` (active panel + service + panel rights), `RootView` (incl. app-switcher privacy cover), tabs |
+| `App/` | `KurafutoApp`, `AppState` (active panel + service + panel rights + app lock), `RootView` (incl. app-switcher privacy cover and lock screen), tabs; `AppLock` (Face ID / passcode via LocalAuthentication), `.destructiveConfirmation` |
 | `Core/Models/` | `Codable` models that mirror Crafty's `openapi-spec.yml` (snake_case `CodingKeys`). Tolerant decoding for Crafty's string-typed numbers |
 | `Core/Networking/` | `APIClient`: bearer auth, `{status,data}` envelope, console WebSocket (`token` cookie), ephemeral `URLSession`, certificate pinning delegate |
 | `Core/Services/` | `CraftyService` protocol, `LiveCraftyService` (real API, ✅/⚠️ markers), `CraftyConsoleFeed` (WebSocket and `/logs` parsing), `MockCraftyService` + `MockData` |
@@ -21,6 +21,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 - `MockData` stays realistic and English; it powers previews, tests, the demo mode and App Review.
 - Panel strings (MOTD, logs, file contents) are plain text. Never render them as HTML or `AttributedString(markdown:)`.
 - File paths passed to the panel come from the panel's own listings; never build them from free text without validation.
+- Destructive actions (stop, kill, delete, restore) use a `ConfirmAction` with `.destructiveConfirmation($confirm)`, or call `app.lock.authorize(_:)` before acting, so the app lock applies.
 - Every `Features/` screen has a `#Preview` backed by `AppState.preview`.
 - Colors come from `Theme` only (no hard-coded or system colors in features), so all three theme modes and the user's accent choices apply. Data values use `Font.mono`.
 - Lists and forms use `.themedBackground()` and wrap their content in a `Group { … }.themedRows()`; custom screens use `.card()`.

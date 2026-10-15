@@ -19,13 +19,14 @@ final class AppState {
     var activeInstance: Instance?
     var service: CraftyService
     var isMock: Bool
-    var requireFaceID = false
-    var isUnlocked = true
+    let lock: AppLock
     /// Panel-wide rights of the signed-in user; nil until loaded or when loading failed.
     var access: PanelAccess?
 
-    init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool) {
+    init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool,
+         lock: AppLock = AppLock()) {
         self.instanceStore = instanceStore
+        self.lock = lock
         self.service = service
         self.activeInstance = activeInstance
         self.isMock = isMock
@@ -33,7 +34,7 @@ final class AppState {
 
     static func bootstrap() -> AppState {
         if ProcessInfo.processInfo.arguments.contains("-mock") {
-            return .preview
+            return .demo(lock: AppLock())
         }
         let store = InstanceStore()
         let first = store.instances.first
@@ -44,10 +45,12 @@ final class AppState {
         return AppState(instanceStore: store, service: service, activeInstance: first, isMock: first == nil)
     }
 
-    static var preview: AppState {
+    static var preview: AppState { .demo(lock: AppLock(defaults: nil)) }
+
+    private static func demo(lock: AppLock) -> AppState {
         AppState(instanceStore: InstanceStore(preview: [MockData.instance]),
                  service: MockCraftyService(latency: .milliseconds(250)),
-                 activeInstance: MockData.instance, isMock: true)
+                 activeInstance: MockData.instance, isMock: true, lock: lock)
     }
 
     func switchTo(_ instance: Instance) {
@@ -104,6 +107,8 @@ struct RootView: View {
                 MainTabView()
             }
         }
+        .accessibilityHidden(app.lock.isLocked)
+        .overlay { if app.lock.isLocked { LockView() } }
         .tint(Theme.accent)
         .preferredColorScheme(Appearance.shared.mode.colorScheme)
         // Hides panel addresses, IPs and console output from the app switcher snapshot.
@@ -116,6 +121,12 @@ struct RootView: View {
                 .ignoresSafeArea()
             }
         }
+        // Lock on .background only: the Face ID prompt itself makes the scene .inactive.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { app.lock.lockIfEnabled() }
+            if phase == .active { Task { await app.lock.unlock() } }
+        }
+        .task { await app.lock.unlock() }
     }
 }
 

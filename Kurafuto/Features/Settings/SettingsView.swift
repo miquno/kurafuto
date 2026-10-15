@@ -3,7 +3,6 @@ import SwiftUI
 /// App settings: switch panels, appearance, Face ID, sign out, legal.
 struct SettingsView: View {
     @Environment(AppState.self) private var app
-    @AppStorage("faceID") private var faceID = false
     @AppStorage("pollSeconds") private var pollSeconds = 5.0
     @State private var confirmLogoutAll = false
 
@@ -29,10 +28,19 @@ struct SettingsView: View {
 
                     AppearanceSection()
 
-                    Section("Security") {
-                        Toggle("Lock with Face ID", isOn: $faceID)
+                    Section {
+                        Toggle("Lock with \(app.lock.kind.label)", isOn: Binding(
+                            get: { app.lock.isEnabled },
+                            set: { on in Task { await app.lock.setEnabled(on) } }))
+                        .disabled(app.lock.kind == .unavailable)
                         Button("Sign Out All Sessions", role: .destructive) { confirmLogoutAll = true }
                         Button("Sign Out of This Panel", role: .destructive) { app.signOut() }
+                    } header: {
+                        Text("Security")
+                    } footer: {
+                        Text(app.lock.kind == .unavailable
+                             ? "Set a device passcode to use the app lock."
+                             : "Asks for \(app.lock.kind.label) when Kurafuto opens and before stop, kill, delete and restore.")
                     }
 
                     Section("Refresh") {
