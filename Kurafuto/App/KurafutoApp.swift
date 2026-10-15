@@ -74,6 +74,16 @@ final class AppState {
         isMock = true
     }
 
+    /// A server page of the active panel's web UI, for what the API cannot do. Built from the stored panel
+    /// address and the server's id only.
+    func webPanelURL(serverID: String, subpage: String) -> URL? {
+        guard let base = activeInstance?.baseURL,
+              var comps = URLComponents(url: base.appending(path: "/panel/server_detail"), resolvingAgainstBaseURL: false),
+              ["https", "http"].contains(comps.scheme) else { return nil }
+        comps.queryItems = [URLQueryItem(name: "id", value: serverID), URLQueryItem(name: "subpage", value: subpage)]
+        return comps.url
+    }
+
     /// Only the active panel's client counts: onboarding and sign-in checks use their own clients.
     func isActiveClient(_ object: Any?) -> Bool {
         guard let client = object as? APIClient else { return false }

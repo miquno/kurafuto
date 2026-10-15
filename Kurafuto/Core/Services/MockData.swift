@@ -97,22 +97,26 @@ enum MockData {
                  command: "say Double XP is active!", parent: nil, oneTime: false, cronString: "0 18 * * 6", delay: 0, nextRun: nil),
     ]
 
+    static let defaultBackupID = "6f1c2a7e-3b4d-4e5f-8a9b-0c1d2e3f4a5b"
+
     static let backupConfigs: [BackupConfig] = [
-        BackupConfig(id: "default", name: "Default", maxBackups: 10, compress: true, shutdown: false,
-                     beforeCommand: "save-off", afterCommand: "save-on", excludedPaths: ["logs", "cache"],
-                     backupLocation: "/crafty/backups/\(survivalID)"),
-        BackupConfig(id: "nas", name: "NAS copy", maxBackups: 30, compress: true, shutdown: true,
-                     beforeCommand: nil, afterCommand: nil, excludedPaths: [],
-                     backupLocation: "/mnt/nas/minecraft"),
+        BackupConfig(id: defaultBackupID, name: "Default Backup", location: "/crafty/backups/\(survivalID)",
+                     maxBackups: 10, compress: true, beforeCommand: "save-off", afterCommand: "save-on",
+                     excludedPaths: ["logs", "cache"], isDefault: true),
+        BackupConfig(id: "9d8e7f6a-5b4c-4d3e-9f2a-1b0c9d8e7f6a", name: "NAS copy", location: "/mnt/nas/minecraft",
+                     maxBackups: 30, compress: true, shutdown: true),
     ]
 
+    /// Archives every six hours, named the way the panel names them.
     static var backupFiles: [BackupFile] {
-        (0..<6).map { i in
-            let d = Date.now.addingTimeInterval(Double(-6 * i) * 3600)
-            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-            return BackupFile(path: "/crafty/backups/\(survivalID)/\(f.string(from: d)).zip",
-                              size: Int64(2_400_000_000 - i * 12_000_000), created: d)
-        }
+        (0..<6).compactMap { backupFile(at: .now.addingTimeInterval(Double(-6 * $0) * 3600)) }
+    }
+
+    /// The panel names archives after its local wall-clock time; the demo panel runs in the device's time zone.
+    static func backupFile(at date: Date) -> BackupFile? {
+        let local = BackupFile.nameFormat()
+        local.timeZone = .current
+        return BackupFile(path: "/crafty/backups/\(survivalID)/\(local.string(from: date)).zip")
     }
 
     static let rootFiles: [FileEntry] = [
