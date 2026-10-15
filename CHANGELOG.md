@@ -19,4 +19,5 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - Animated gauges, live charts and build-up animations; with Reduce Motion they become simple fades.
 - The console shows new lines instantly over the panel's WebSocket and falls back to polling when the connection is unavailable. It keeps the last 1,000 lines.
 - App lock: with "Lock with Face ID" on, Kurafuto asks for Face ID (or Touch ID or the device passcode) when it opens or returns from the background, and before stopping, killing, deleting or restoring. Turning the lock on or off also needs Face ID.
+- Deleting schedules, webhooks, files and folders now asks for confirmation first (and Face ID when the app lock is on).
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.
