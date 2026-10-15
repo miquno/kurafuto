@@ -72,6 +72,7 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
             if s.running { // add some movement to the values
                 s.cpu = max(1, min(95, s.cpu + Double.random(in: -6...6)))
                 s.memPercent = max(5, min(90, s.memPercent + Double.random(in: -2...2)))
+                s.memBytes = s.memBytes.map { max(0, $0 * (1 + Double.random(in: -0.02...0.02))) }
                 stats[serverID] = s
             }
             return s
@@ -155,6 +156,21 @@ final class MockCraftyService: CraftyService, @unchecked Sendable {
 
     private func appendConsole(_ serverID: String, _ line: String) {
         sync { console[serverID, default: MockData.consoleLines].append(line) }
+    }
+
+    /// An hour of plausible values every 30 s, like the panel records them; flat while the server is down.
+    func statsHistory(serverID: String) async throws -> [StatSample] {
+        try await simulate()
+        let current = sync { stats[serverID] }
+        guard let current, current.running else { return [] }
+        let mem = current.memBytes ?? 0
+        return (0..<120).map { i in
+            let t = Double(i)
+            let wave = sin(t / 9) * 0.5 + sin(t / 3.7) * 0.3
+            return StatSample(date: .now.addingTimeInterval(-Double(119 - i) * 30),
+                              cpu: max(1, current.cpu + wave * 8),
+                              memBytes: max(0, mem * (1 + wave * 0.06)))
+        }
     }
 
     func logs(serverID: String, fromFile: Bool) async throws -> [String] {

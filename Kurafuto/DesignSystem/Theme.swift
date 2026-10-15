@@ -388,7 +388,8 @@ private struct EntranceModifier: ViewModifier {
 
 /// Primary and tinted buttons in the Instrument look.
 struct InstrumentButtonStyle: ButtonStyle {
-    enum Kind { case filled, tinted, outline }
+    /// `console` is the always-dark console look.
+    enum Kind { case filled, tinted, outline, console }
     var kind: Kind = .filled
     var color: Color = Theme.accent
 
@@ -424,6 +425,7 @@ struct InstrumentButtonStyle: ButtonStyle {
             case .filled: Theme.onAccent
             case .tinted: color
             case .outline: .primary
+            case .console: Theme.consoleText
             }
         }
 
@@ -432,6 +434,7 @@ struct InstrumentButtonStyle: ButtonStyle {
             case .filled: color
             case .tinted: color.opacity(0.14)
             case .outline: Theme.sunken
+            case .console: Theme.console
             }
         }
     }
