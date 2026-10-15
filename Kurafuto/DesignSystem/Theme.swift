@@ -447,6 +447,7 @@ enum Loadable<T> {
 }
 
 struct LoadableView<T, Content: View>: View {
+    @Environment(AppState.self) private var app
     let state: Loadable<T>
     let retry: () async -> Void
     @ViewBuilder let content: (T) -> Content
@@ -458,17 +459,88 @@ struct LoadableView<T, Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Theme.background.ignoresSafeArea())
         case .failed(let error):
+            let problem = error.panelProblem
             ContentUnavailableView {
-                Label("Error", systemImage: "wifi.exclamationmark")
+                Label(problem.title, systemImage: problem.symbol)
             } description: {
-                Text(error.localizedDescription)
+                Text(problem.message(for: error))
             } actions: {
+                if problem == .sessionExpired {
+                    Button("Sign In Again") { app.sessionExpired = true }
+                        .buttonStyle(InstrumentButtonStyle()).frame(width: 200)
+                }
                 Button("Try Again") { Task { await retry() } }
-                    .buttonStyle(InstrumentButtonStyle()).frame(width: 160)
+                    .buttonStyle(InstrumentButtonStyle(kind: problem == .sessionExpired ? .outline : .filled))
+                    .frame(width: 200)
             }
             .background(Theme.background.ignoresSafeArea())
         case .loaded(let v):
             content(v)
+        }
+    }
+}
+
+extension PanelProblem {
+    var title: LocalizedStringKey {
+        switch self {
+        case .offline: "Panel Unreachable"
+        case .sessionExpired: "Signed Out"
+        case .permissionDenied: "No Permission"
+        case .other: "Error"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .offline: "wifi.slash"
+        case .sessionExpired: "person.crop.circle.badge.exclamationmark"
+        case .permissionDenied: "lock.fill"
+        case .other: "exclamationmark.triangle"
+        }
+    }
+
+    func message(for error: Error) -> String {
+        switch self {
+        case .offline:
+            "Check that the panel is running and that your iPhone can reach it, for example on the same network or over VPN."
+        case .sessionExpired:
+            "Your session on this panel has ended. Sign in again to continue."
+        case .permissionDenied:
+            "Your panel account is not allowed to do this. Ask the panel's admin for access.\n\n\(error.localizedDescription)"
+        case .other:
+            error.localizedDescription
+        }
+    }
+}
+
+/// Live values could not be refreshed; the screen keeps the last ones it got.
+struct StaleValuesBanner: View {
+    let problem: PanelProblem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: problem.symbol).foregroundStyle(Theme.warning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(problem.title).font(.subheadline.weight(.semibold))
+                Text("Showing the last known values.").font(.caption).foregroundStyle(Theme.secondaryText)
+            }
+            Spacer()
+        }
+        .card(padding: 12)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+extension View {
+    /// Shows why an action failed. A rejected token is left to the sign-in sheet in `RootView`.
+    func errorAlert(_ error: Binding<Error?>) -> some View {
+        let shown = error.wrappedValue.flatMap { $0.panelProblem == .sessionExpired ? nil : $0 }
+        return alert(shown?.panelProblem.title ?? "Error",
+                     isPresented: Binding(get: { shown != nil }, set: { if !$0 { error.wrappedValue = nil } }),
+                     presenting: shown) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { e in
+            Text(e.panelProblem.message(for: e))
         }
     }
 }

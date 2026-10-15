@@ -22,6 +22,8 @@ final class AppState {
     let lock: AppLock
     /// Panel-wide rights of the signed-in user; nil until loaded or when loading failed.
     var access: PanelAccess?
+    /// The panel rejected the active token; RootView asks to sign in again.
+    var sessionExpired = false
 
     init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool,
          lock: AppLock = AppLock()) {
@@ -72,6 +74,21 @@ final class AppState {
         isMock = true
     }
 
+    /// Only the active panel's client counts: onboarding and sign-in checks use their own clients.
+    func isActiveClient(_ object: Any?) -> Bool {
+        guard let client = object as? APIClient else { return false }
+        return (service as? LiveCraftyService)?.client === client
+    }
+
+    func reauthenticate(_ instance: Instance, token: String) {
+        instanceStore.upsert(instance, token: token)
+        activeInstance = instance
+        access = nil
+        service = LiveCraftyService(client: APIClient(baseURL: instance.baseURL, token: token,
+                                                      pinnedSHA256: instance.pinnedCertificateSHA256))
+        sessionExpired = false
+    }
+
     func signOut() {
         if let i = activeInstance, !isMock { instanceStore.remove(i) }
         activeInstance = nil
@@ -109,6 +126,16 @@ struct RootView: View {
         }
         .accessibilityHidden(app.lock.isLocked)
         .overlay { if app.lock.isLocked { LockView() } }
+        .sheet(isPresented: Binding(get: { app.sessionExpired && !app.lock.isLocked && !app.isMock },
+                                    set: { app.sessionExpired = $0 })) {
+            SignInAgainView()
+        }
+        .task {
+            for await note in NotificationCenter.default.notifications(named: .panelSessionExpired)
+            where app.isActiveClient(note.object) {
+                app.sessionExpired = true
+            }
+        }
         .tint(Theme.accent)
         .preferredColorScheme(Appearance.shared.mode.colorScheme)
         // Hides panel addresses, IPs and console output from the app switcher snapshot.
@@ -146,7 +173,7 @@ struct MainTabView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .task(id: app.activeInstance?.id) { await app.refreshAccess() }
+        .task(id: ObjectIdentifier(app.service)) { await app.refreshAccess() }
     }
 }
 

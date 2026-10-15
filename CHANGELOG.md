@@ -22,4 +22,6 @@ All notable user-facing changes to Kurafuto are documented here. The format is b
 - App lock: with "Lock with Face ID" on, Kurafuto asks for Face ID (or Touch ID or the device passcode) when it opens or returns from the background, and before stopping, killing, deleting or restoring. Turning the lock on or off also needs Face ID.
 - Deleting schedules, webhooks, files and folders now asks for confirmation first (and Face ID when the app lock is on).
 - Demo mode: start times and console timestamps follow the current clock instead of fixed dates, and starting or stopping a demo server updates its start time.
+- Clearer errors: screens tell apart an unreachable panel, a signed-out session and missing rights. When live values stop updating, the dashboard and server screen say so. Failed start, stop, restart and kill actions show why.
+- When the panel signs you out (expired token or "Sign Out All Sessions"), Kurafuto asks you to sign in again to the same panel instead of failing quietly.
 - Works with Crafty Controller 4.7 and later; sign-in, servers, live values, start/stop/restart, console and logs are verified against real panels.

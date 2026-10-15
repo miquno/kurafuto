@@ -11,6 +11,8 @@ struct DashboardView: View {
     @State private var search = ""
     @State private var showCreate = false
     @State private var confirm: ConfirmAction?
+    @State private var actionError: Error?
+    @State private var liveProblem: PanelProblem?
     @State private var eulaServer: Server?
 
     var body: some View {
@@ -19,6 +21,7 @@ struct DashboardView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         header(servers).entrance(0)
+                        if let liveProblem { StaleValuesBanner(problem: liveProblem) }
                         if servers.count > 3 { searchField.entrance(1) }
                         content(servers)
                     }
@@ -33,6 +36,7 @@ struct DashboardView: View {
             .navigationDestination(for: Server.self) { ServerDetailView(server: $0) }
             .sheet(isPresented: $showCreate, onDismiss: { Task { await load() } }) { CreateServerView() }
             .destructiveConfirmation($confirm)
+            .errorAlert($actionError)
             .eulaPrompt(for: $eulaServer) { await load() }
             .task { await load() }
             .task { await pollStats() }
@@ -184,10 +188,21 @@ struct DashboardView: View {
 
     private func refreshStats(_ servers: [Server]) async {
         let service = app.service
-        await withTaskGroup(of: (String, ServerStats?).self) { group in
-            for s in servers { group.addTask { (s.id, try? await service.stats(serverID: s.id)) } }
-            for await (id, st) in group { if let st { stats[id] = st } }
+        var problems: [PanelProblem] = []
+        await withTaskGroup(of: (String, ServerStats?, PanelProblem?).self) { group in
+            for s in servers {
+                group.addTask {
+                    do { return (s.id, try await service.stats(serverID: s.id), nil) }
+                    catch { return (s.id, nil, error.panelProblem) }
+                }
+            }
+            for await (id, st, problem) in group {
+                if let st { stats[id] = st }
+                if let problem { problems.append(problem) }
+            }
         }
+        // Only when nothing came back: a single failing server is shown by its own status.
+        liveProblem = !servers.isEmpty && problems.count == servers.count ? problems.first : nil
         await refreshConsoleTail(servers)
     }
 
@@ -209,11 +224,14 @@ struct DashboardView: View {
     private func run(_ action: ServerAction, _ server: Server) async {
         do {
             try await app.service.send(action, serverID: server.id)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch CraftyError.eulaRequired {
             eulaServer = server
             return
-        } catch {}
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        } catch {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            actionError = error
+        }
         await refreshStats([server])
     }
 }
