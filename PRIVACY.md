@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-10-14_
+_Last updated: 2026-10-15_
 
 **Short version: Kurafuto collects nothing. We do not have a server, and we never see your data.**
 
@@ -23,6 +23,8 @@ Kurafuto connects **only** to the panel address you enter. Everything you do in 
 | Access token for your panel | iOS Keychain, this device only | So you stay signed in |
 | Panel name, address, username, certificate fingerprint | App storage, encrypted by iOS | So you can switch between panels |
 | App settings (e.g. Face ID lock, refresh interval) | App storage | Your preferences |
+
+Face ID, Touch ID and your passcode are checked by iOS; Kurafuto only learns whether the check succeeded and never sees biometric data.
 
 Your password is never stored; it is only used once to obtain a token from your panel. Server data, logs and files are shown while you look at them and are not saved by Kurafuto.
 

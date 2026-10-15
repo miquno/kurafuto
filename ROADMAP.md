@@ -35,7 +35,7 @@ Kurafuto's goal: **everything the Crafty Controller web dashboard can do, as a p
 - [x] Verify sign-in, server list, stats, actions, stdin and logs against Crafty 4.7+; record the minimum supported version (4.7.0; see `docs/api/crafty-api-v2.md`).
 - [x] Hide UI that the signed-in user has no permission for (`/api/v2/users/{id}/permissions`).
 - [x] Live console over the panel WebSocket (port from `websocket_handler.py`), polling as fallback.
-- [ ] Face ID lock (app launch and before destructive actions).
+- [x] Face ID lock (app launch and before destructive actions).
 - [ ] Error states for offline panel, expired token and permission denied.
 
 **Acceptance criteria:** start/stop/restart and console work on a real panel; no token or console text appears in logs.

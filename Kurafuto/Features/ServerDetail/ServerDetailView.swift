@@ -43,11 +43,7 @@ struct ServerDetailView: View {
             } label: { Image(systemName: "ellipsis") }
             .accessibilityLabel("More actions")
         }
-        .confirmationDialog(confirm?.title ?? "", isPresented: .constant(confirm != nil), titleVisibility: .visible,
-                            presenting: confirm) { c in
-            Button(c.buttonLabel, role: .destructive) { Task { await c.perform(); confirm = nil } }
-            Button("Cancel", role: .cancel) { confirm = nil }
-        } message: { Text($0.message) }
+        .destructiveConfirmation($confirm)
         .task { await poll() }
         .refreshable { await refresh() }
     }
