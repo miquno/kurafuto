@@ -74,10 +74,14 @@ protocol CraftyService: AnyObject, Sendable {
 
     // Users & roles (superuser, or USER_CONFIG / ROLES_CONFIG)
     func panelAccess() async throws -> PanelAccess
+    /// With roles, last login and IP from each user's detail.
     func users() async throws -> [CraftyUser]
-    func saveUser(_ user: CraftyUser, password: String?) async throws
+    /// Creates the user when `id` is 0, otherwise sends only the changes.
+    func saveUser(id: Int, changes: UserChanges) async throws
     func deleteUser(id: Int) async throws
+    /// With each role's servers when the signed-in user may read them (superusers only), else `servers` is nil.
     func roles() async throws -> [Role]
+    /// Creates the role when its id is 0.
     func saveRole(_ role: Role) async throws
     func deleteRole(id: Int) async throws
 
