@@ -2,7 +2,13 @@ import SwiftUI
 
 @main
 struct KurafutoApp: App {
-    @State private var app = AppState.bootstrap()
+    @State private var app: AppState
+
+    init() {
+        let state = AppState.bootstrap()
+        _app = State(initialValue: state)
+        ServerShortcuts.app = state
+    }
 
     var body: some Scene {
         WindowGroup {

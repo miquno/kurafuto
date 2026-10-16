@@ -193,6 +193,28 @@
         }
       }
     },
+    "%@ is not running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ läuft nicht."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ は起動していません。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 未在运行。"
+          }
+        }
+      }
+    },
     "%@ is not supported by this panel version." : {
       "localizations" : {
         "de" : {
@@ -1230,6 +1252,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加用户或角色"
+          }
+        }
+      }
+    },
+    "Add your panel in Kurafuto first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge zuerst dein Panel in Kurafuto hinzu."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まず Kurafuto でパネルを追加してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先在 Kurafuto 中添加你的面板。"
           }
         }
       }
@@ -4694,6 +4738,28 @@
         }
       }
     },
+    "Kurafuto could not confirm it's you. Open Kurafuto to stop the server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto konnte nicht bestätigen, dass du es bist. Öffne Kurafuto, um den Server zu stoppen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本人確認ができませんでした。サーバーを停止するには Kurafuto を開いてください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto 无法确认是你本人。请打开 Kurafuto 来停止服务器。"
+          }
+        }
+      }
+    },
     "Kurafuto is locked" : {
       "localizations" : {
         "de" : {
@@ -4712,6 +4778,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kurafuto 已锁定"
+          }
+        }
+      }
+    },
+    "Kurafuto opens to confirm it's you." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto öffnet sich, um zu bestätigen, dass du es bist."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本人確認のため Kurafuto を開きます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto 将打开以确认是你本人。"
           }
         }
       }
@@ -5970,6 +6058,28 @@
         }
       }
     },
+    "Open Kurafuto and accept the Minecraft EULA for %@ first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Kurafuto und akzeptiere zuerst die Minecraft-EULA für %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto を開き、先に %@ の Minecraft EULA に同意してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先打开 Kurafuto，并接受 %@ 的 Minecraft EULA。"
+          }
+        }
+      }
+    },
     "Open Kurafuto to show your servers." : {
       "localizations" : {
         "de" : {
@@ -6394,6 +6504,28 @@
         }
       }
     },
+    "Player Count" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerzahl"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレイヤー数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "玩家人数"
+          }
+        }
+      }
+    },
     "Player name" : {
       "localizations" : {
         "de" : {
@@ -6438,6 +6570,28 @@
         }
       }
     },
+    "Players on ${server}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler auf ${server}"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} のプレイヤー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} 上的玩家"
+          }
+        }
+      }
+    },
     "Players online" : {
       "localizations" : {
         "de" : {
@@ -6456,6 +6610,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在线玩家"
+          }
+        }
+      }
+    },
+    "Players online on %@: %lld of %lld." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler online auf %1$@: %2$lld von %3$lld."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Players online on %1$@: %2$lld of %3$lld."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ のオンラインプレイヤー: %3$lld 人中 %2$lld 人。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 在线玩家：%2$lld/%3$lld。"
           }
         }
       }
@@ -8138,6 +8320,50 @@
         }
       }
     },
+    "Start ${server}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} starten"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} を起動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启动 ${server}"
+          }
+        }
+      }
+    },
+    "Start Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server starten"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーを起動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启动服务器"
+          }
+        }
+      }
+    },
     "Start automatically with panel" : {
       "localizations" : {
         "de" : {
@@ -8226,6 +8452,28 @@
         }
       }
     },
+    "Starting %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird gestartet."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ を起動しています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在启动 %@。"
+          }
+        }
+      }
+    },
     "Starting…" : {
       "localizations" : {
         "de" : {
@@ -8244,6 +8492,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在启动…"
+          }
+        }
+      }
+    },
+    "Starts a server on your Crafty panel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startet einen Server auf deinem Crafty-Panel."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crafty パネル上のサーバーを起動します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启动你的 Crafty 面板上的服务器。"
           }
         }
       }
@@ -8336,6 +8606,28 @@
         }
       }
     },
+    "Stop ${server}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} stoppen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${server} を停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止 ${server}"
+          }
+        }
+      }
+    },
     "Stop %@?" : {
       "localizations" : {
         "de" : {
@@ -8354,6 +8646,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "停止 %@？"
+          }
+        }
+      }
+    },
+    "Stop %@? Connected players will be disconnected." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ stoppen? Verbundene Spieler werden getrennt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ を停止しますか？ 接続中のプレイヤーは切断されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止 %@？已连接的玩家将被断开连接。"
+          }
+        }
+      }
+    },
+    "Stop Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server stoppen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーを停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止服务器"
           }
         }
       }
@@ -8446,6 +8782,50 @@
         }
       }
     },
+    "Stopping %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird gestoppt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ を停止しています。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在停止 %@。"
+          }
+        }
+      }
+    },
+    "Stops a server on your Crafty panel after you confirm." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stoppt nach deiner Bestätigung einen Server auf deinem Crafty-Panel."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認後に Crafty パネル上のサーバーを停止します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认后停止你的 Crafty 面板上的服务器。"
+          }
+        }
+      }
+    },
     "Storage" : {
       "localizations" : {
         "de" : {
@@ -8530,6 +8910,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "传送到我身边"
+          }
+        }
+      }
+    },
+    "Tells how many players are online on a server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sagt, wie viele Spieler auf einem Server online sind."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーにオンラインのプレイヤー数を伝えます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "告诉你某台服务器上有多少玩家在线。"
           }
         }
       }
