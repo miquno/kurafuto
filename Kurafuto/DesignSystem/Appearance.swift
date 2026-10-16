@@ -1,88 +1,5 @@
 import SwiftUI
 
-/// The three looks of the "Instrument" design. Gray and dark both use the system's dark scheme.
-enum ThemeMode: String, CaseIterable, Identifiable {
-    case dark, gray, light
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .dark: "Dark"
-        case .gray: "Gray"
-        case .light: "Light"
-        }
-    }
-
-    var colorScheme: ColorScheme { self == .light ? .light : .dark }
-}
-
-/// Elements that carry their own accent color, chosen by the user in Settings.
-enum AccentRole: String, CaseIterable, Identifiable {
-    case accent, cpu, ram, players, storage
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .accent: "Accent"
-        case .cpu: "CPU"
-        case .ram: "RAM"
-        case .players: "Players"
-        case .storage: "Storage"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .accent: "paintbrush.pointed.fill"
-        case .cpu: "cpu"
-        case .ram: "memorychip"
-        case .players: "person.2.fill"
-        case .storage: "internaldrive"
-        }
-    }
-
-    var defaultPreset: AccentPreset {
-        switch self {
-        case .accent, .cpu: .cyan
-        case .ram: .violet
-        case .players: .green
-        case .storage: .amber
-        }
-    }
-}
-
-/// A fixed set of accent colors instead of a free color picker, so every choice keeps
-/// readable contrast on all three backgrounds. Light mode uses a darker shade of each.
-enum AccentPreset: String, CaseIterable, Identifiable {
-    case cyan, green, violet, amber, pink, blue, orange
-
-    var id: String { rawValue }
-
-    var label: String { rawValue.capitalized }
-
-    func color(for mode: ThemeMode) -> Color {
-        let hex: UInt32 = switch (self, mode == .light) {
-        case (.cyan, false): 0x3DD9EB
-        case (.cyan, true): 0x007C8F
-        case (.green, false): 0x5BD27A
-        case (.green, true): 0x1B7A3B
-        case (.violet, false): 0x9B8CFF
-        case (.violet, true): 0x5B47D6
-        case (.amber, false): 0xFFB547
-        case (.amber, true): 0x8F5500
-        case (.pink, false): 0xFF7AB8
-        case (.pink, true): 0xB0144F
-        case (.blue, false): 0x6FA8FF
-        case (.blue, true): 0x2350E6
-        case (.orange, false): 0xFF8A4C
-        case (.orange, true): 0xB04400
-        }
-        return Color(hex: hex)
-    }
-}
-
 /// User-chosen look, persisted in UserDefaults (app-only preferences, see PRIVACY.md).
 /// A main-actor singleton so `Theme`'s static colors stay observable from any view body.
 @MainActor @Observable
@@ -124,13 +41,5 @@ final class Appearance {
     private enum Keys {
         static let mode = "appearance.mode"
         static func accent(_ role: AccentRole) -> String { "appearance.accent.\(role.rawValue)" }
-    }
-}
-
-extension Color {
-    init(hex: UInt32) {
-        self.init(red: Double((hex >> 16) & 0xFF) / 255,
-                  green: Double((hex >> 8) & 0xFF) / 255,
-                  blue: Double(hex & 0xFF) / 255)
     }
 }

@@ -17,67 +17,17 @@ enum Theme {
     static var surface: Color { surface(for: mode) }
 
     /// Per-mode variants, e.g. for the theme previews in Settings.
-    static func background(for mode: ThemeMode) -> Color {
-        switch mode {
-        case .dark: Color(hex: 0x0A0C0F)
-        case .gray: Color(hex: 0x1C2026)
-        case .light: Color(hex: 0xF2F4F6)
-        }
-    }
-
-    static func surface(for mode: ThemeMode) -> Color {
-        switch mode {
-        case .dark: Color(hex: 0x12161B)
-        case .gray: Color(hex: 0x262B32)
-        case .light: Color(hex: 0xFFFFFF)
-        }
-    }
-
-    static func primaryText(for mode: ThemeMode) -> Color {
-        mode == .light ? Color(hex: 0x0D0F12) : Color(hex: 0xEDEFF2)
-    }
+    static func background(for mode: ThemeMode) -> Color { Palette.background(mode) }
+    static func surface(for mode: ThemeMode) -> Color { Palette.surface(mode) }
+    static func primaryText(for mode: ThemeMode) -> Color { Palette.primaryText(mode) }
 
     /// Inset areas inside a card (gauge tiles, icon tiles).
-    static var sunken: Color {
-        switch mode {
-        case .dark: Color(hex: 0x0D1014)
-        case .gray: Color(hex: 0x20252B)
-        case .light: Color(hex: 0xF4F6F8)
-        }
-    }
-
-    static var stroke: Color {
-        switch mode {
-        case .dark: Color(hex: 0x252B33)
-        case .gray: Color(hex: 0x363D46)
-        case .light: Color(hex: 0xE1E5EA)
-        }
-    }
-
-    static var divider: Color {
-        switch mode {
-        case .dark: Color(hex: 0x1E242B)
-        case .gray: Color(hex: 0x2F353D)
-        case .light: Color(hex: 0xE8EBEF)
-        }
-    }
-
+    static var sunken: Color { Palette.sunken(mode) }
+    static var stroke: Color { Palette.stroke(mode) }
+    static var divider: Color { Palette.divider(mode) }
     /// Ring and meter tracks.
-    static var track: Color {
-        switch mode {
-        case .dark: Color(hex: 0x232930)
-        case .gray: Color(hex: 0x353C45)
-        case .light: Color(hex: 0xE4E8EC)
-        }
-    }
-
-    static var secondaryText: Color {
-        switch mode {
-        case .dark: Color(hex: 0x8D96A1)
-        case .gray: Color(hex: 0xA3ACB7)
-        case .light: Color(hex: 0x5A626D)
-        }
-    }
+    static var track: Color { Palette.track(mode) }
+    static var secondaryText: Color { Palette.secondaryText(mode) }
 
     /// The console stays dark in every mode, so its line colors always use the dark-mode shades.
     static let console = Color(hex: 0x07090B)
@@ -98,24 +48,10 @@ enum Theme {
     /// Text and icons placed on an accent fill.
     static var onAccent: Color { mode == .light ? .white : Color(hex: 0x0A0C0F) }
 
-    static var danger: Color { mode == .light ? Color(hex: 0xC62828) : consoleError }
-    static var warning: Color { AccentPreset.amber.color(for: mode) }
+    static var danger: Color { Palette.danger(mode) }
+    static var warning: Color { Palette.warning(mode) }
 
-    static func color(for status: ServerStatus) -> Color {
-        switch status {
-        case .online: accent
-        case .offline: secondaryText
-        case .starting, .updating: warning
-        case .crashed: danger
-        }
-    }
-}
-
-extension Font {
-    /// Monospaced data font (SF Mono) that still follows Dynamic Type.
-    static func mono(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        .system(style, design: .monospaced).weight(weight)
-    }
+    static func color(for status: ServerStatus) -> Color { Palette.color(for: status, mode: mode, accent: accent) }
 }
 
 // MARK: - Surfaces
@@ -170,10 +106,11 @@ private struct ThemedRows: ViewModifier {
 
 /// Small uppercase monospaced label above a group of cards.
 struct SectionLabel: View {
-    let title: String
-    init(_ title: String) { self.title = title }
+    let title: LocalizedStringResource
+    init(_ title: LocalizedStringResource) { self.title = title }
     var body: some View {
-        Text(title.uppercased())
+        Text(title)
+            .textCase(.uppercase)
             .font(.mono(.caption2, weight: .medium))
             .tracking(0.8)
             .foregroundStyle(Theme.secondaryText)
@@ -265,7 +202,7 @@ struct RingGauge: View {
                 .trim(from: 0, to: shown / 100)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text("\(Int(clamped.rounded()))%")
+            Text(clamped / 100, format: .percent.precision(.fractionLength(0)))
                 .font(.mono(.subheadline, weight: .semibold))
                 .contentTransition(.numericText(value: clamped))
                 .animation(.snappy, value: clamped)
@@ -283,13 +220,15 @@ struct RingGauge: View {
 
 /// Inset tile with a ring gauge and a caption, as in the dashboard's featured server.
 struct GaugeTile: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: Double
     let color: Color
     var caption: String?
     var delay: Double = 0
 
     var body: some View {
+        let title = String(localized: title)
+        let percent = (min(max(value, 0), 100) / 100).formatted(.percent.precision(.fractionLength(0)))
         VStack(spacing: 8) {
             RingGauge(value: value, color: color, delay: delay)
                 .frame(width: 64, height: 64)
@@ -303,19 +242,19 @@ struct GaugeTile: View {
         .background(Theme.sunken, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(caption.map { "\(Int(value.rounded())) percent, \($0)" } ?? "\(Int(value.rounded())) percent")
+        .accessibilityValue(caption.map { "\(percent), \($0)" } ?? percent)
     }
 }
 
 /// Inset tile with a single value, the gauge tiles' plain sibling.
 struct ValueTile: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: String
     var color: Color = .primary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased()).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
+            Text(title).textCase(.uppercase).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
             Text(value).font(.mono(.title3, weight: .semibold)).foregroundStyle(color)
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
@@ -505,11 +444,11 @@ extension PanelProblem {
     func message(for error: Error) -> String {
         switch self {
         case .offline:
-            "Check that the panel is running and that your iPhone can reach it, for example on the same network or over VPN."
+            String(localized: "Check that the panel is running and that your iPhone can reach it, for example on the same network or over VPN.")
         case .sessionExpired:
-            "Your session on this panel has ended. Sign in again to continue."
+            String(localized: "Your session on this panel has ended. Sign in again to continue.")
         case .permissionDenied:
-            "Your panel account is not allowed to do this. Ask the panel's admin for access.\n\n\(error.localizedDescription)"
+            String(localized: "Your panel account is not allowed to do this. Ask the panel's admin for access.") + "\n\n" + error.localizedDescription
         case .other:
             error.localizedDescription
         }

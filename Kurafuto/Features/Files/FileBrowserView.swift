@@ -39,7 +39,7 @@ struct FileBrowserView: View {
             .refreshable { await load() }
             .overlay { if entries.isEmpty { ContentUnavailableView("Empty Folder", systemImage: "folder") } }
         }
-        .navigationTitle(path.isEmpty ? "Files" : (path as NSString).lastPathComponent)
+        .navigationTitle(path.isEmpty ? String(localized: "Files") : (path as NSString).lastPathComponent)
         .destructiveConfirmation($confirm)
         .errorAlert($actionError)
         .toolbar {
@@ -91,9 +91,9 @@ struct FileBrowserView: View {
         }
         .swipeActions {
             Button(role: .destructive) {
-                confirm = ConfirmAction(title: e.isDirectory ? "Delete folder?" : "Delete file?",
-                                        message: e.isDirectory ? "\(e.name) and everything in it will be deleted." : e.name,
-                                        buttonLabel: "Delete") {
+                confirm = ConfirmAction(title: e.isDirectory ? String(localized: "Delete folder?") : String(localized: "Delete file?"),
+                                        message: e.isDirectory ? String(localized: "\(e.name) and everything in it will be deleted.") : e.name,
+                                        buttonLabel: String(localized: "Delete")) {
                     await $actionError.capture { try await app.service.deleteFile(serverID: server.id, path: e.path) }
                     await load()
                 }
@@ -135,9 +135,9 @@ struct FileBrowserView: View {
             return
         }
         if state.value?.contains(where: { $0.name == name }) == true {
-            confirm = ConfirmAction(title: "Replace \(name)?",
-                                    message: "A file with this name is already in this folder. The upload replaces it.",
-                                    buttonLabel: "Replace") { startUpload(url, name: name) }
+            confirm = ConfirmAction(title: String(localized: "Replace \(name)?"),
+                                    message: String(localized: "A file with this name is already in this folder. The upload replaces it."),
+                                    buttonLabel: String(localized: "Replace")) { startUpload(url, name: name) }
         } else {
             startUpload(url, name: name)
         }

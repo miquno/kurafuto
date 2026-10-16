@@ -290,7 +290,7 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
         for index in 0..<total {
             try Task.checkCancellation()
             guard let chunk = try handle.read(upToCount: FileUpload.chunkBytes), !chunk.isEmpty else {
-                throw CraftyError.uploadRefused("The file changed while it was being uploaded.")
+                throw CraftyError.uploadRefused(String(localized: "The file changed while it was being uploaded."))
             }
             headers["chunkId"] = "\(index)"
             headers["chunkHash"] = SHA256.hash(data: chunk).map { String(format: "%02x", $0) }.joined()
@@ -328,26 +328,63 @@ final class LiveCraftyService: CraftyService, @unchecked Sendable {
 
     // MARK: Users & roles ✅
     func panelAccess() async throws -> PanelAccess {
-        struct Me: Decodable { let superuser: Bool }
+        struct Me: Decodable {
+            let userID: Int?
+            let superuser: Bool
+            enum CodingKeys: String, CodingKey { case userID = "user_id", superuser }
+        }
         async let me: Me = client.request(.get, "/api/v2/users/@me")
         async let permissions: CraftyPermissions = client.request(.get, "/api/v2/users/@me/permissions")
-        return try await PanelAccess(isSuperuser: me.superuser, permissions: permissions)
+        let (user, rights) = try await (me, permissions)
+        return PanelAccess(isSuperuser: user.superuser, permissions: rights, userID: user.userID)
     }
-    func users() async throws -> [CraftyUser] { try await client.request(.get, "/api/v2/users") }
-    func saveUser(_ user: CraftyUser, password: String?) async throws {
-        if user.userID == 0 {
-            let _: Empty = try await client.request(.post, "/api/v2/users", body: .json(user))
-        } else {
-            let _: Empty = try await client.request(.patch, "/api/v2/users/\(user.userID)", body: .json(user))
+    /// The list has no roles; each user's detail has them.
+    func users() async throws -> [CraftyUser] {
+        let list: [CraftyUser] = try await client.request(.get, "/api/v2/users")
+        let client = client
+        return try await withThrowingTaskGroup(of: CraftyUser.self) { group in
+            for user in list {
+                group.addTask { try await client.request(.get, "/api/v2/users/\(user.userID)") }
+            }
+            var detailed: [CraftyUser] = []
+            for try await user in group { detailed.append(user) }
+            return detailed.sorted { $0.userID < $1.userID }
+        }
+    }
+    func saveUser(id: Int, changes: UserChanges) async throws {
+        if id == 0 {
+            let _: Empty = try await client.request(.post, "/api/v2/users", body: .json(changes))
+        } else if !changes.isEmpty {
+            let _: Empty = try await client.request(.patch, "/api/v2/users/\(id)", body: .json(changes))
         }
     }
     func deleteUser(id: Int) async throws { let _: Empty = try await client.request(.delete, "/api/v2/users/\(id)") }
-    func roles() async throws -> [Role] { try await client.request(.get, "/api/v2/roles") }
+    /// Role servers are superuser-only; for everyone else the roles come without them.
+    func roles() async throws -> [Role] {
+        let list: [Role] = try await client.request(.get, "/api/v2/roles")
+        let client = client
+        do {
+            return try await withThrowingTaskGroup(of: Role.self) { group in
+                for role in list {
+                    group.addTask {
+                        var r = role
+                        r.servers = try await client.request(.get, "/api/v2/roles/\(role.roleID)/servers")
+                        return r
+                    }
+                }
+                var detailed: [Role] = []
+                for try await role in group { detailed.append(role) }
+                return detailed.sorted { $0.roleID < $1.roleID }
+            }
+        } catch CraftyError.forbidden {
+            return list.sorted { $0.roleID < $1.roleID }
+        }
+    }
     func saveRole(_ role: Role) async throws {
         if role.roleID == 0 {
-            let _: Empty = try await client.request(.post, "/api/v2/roles", body: .json(role))
+            let _: Empty = try await client.request(.post, "/api/v2/roles", body: .json(RoleBody(role: role)))
         } else {
-            let _: Empty = try await client.request(.patch, "/api/v2/roles/\(role.roleID)", body: .json(role))
+            let _: Empty = try await client.request(.patch, "/api/v2/roles/\(role.roleID)", body: .json(RoleBody(role: role)))
         }
     }
     func deleteRole(id: Int) async throws { let _: Empty = try await client.request(.delete, "/api/v2/roles/\(id)") }

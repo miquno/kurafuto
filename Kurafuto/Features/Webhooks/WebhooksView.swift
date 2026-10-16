@@ -26,8 +26,9 @@ struct WebhooksView: View {
                     }
                     .onDelete { idx in
                         let doomed = idx.map { hooks[$0] }
-                        confirm = ConfirmAction(title: doomed.count == 1 ? "Delete webhook?" : "Delete \(doomed.count) webhooks?",
-                                                message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
+                        confirm = ConfirmAction(title: String(localized: "Delete \(doomed.count) webhooks?"),
+                                                message: doomed.map(\.name).joined(separator: ", "),
+                                                buttonLabel: String(localized: "Delete")) {
                             await $actionError.capture {
                                 for h in doomed { try await app.service.deleteWebhook(id: h.id, serverID: server.id) }
                             }
@@ -80,7 +81,7 @@ struct WebhooksView: View {
             if let host = URLComponents(string: h.url)?.host {
                 Text(host).font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
             }
-            Text(h.triggers.isEmpty ? "No triggers" : h.triggers.map(WebhookTrigger.label(for:)).joined(separator: " · "))
+            Text(h.triggers.isEmpty ? String(localized: "No triggers") : h.triggers.map(WebhookTrigger.label(for:)).joined(separator: " · "))
                 .font(.caption).foregroundStyle(Theme.secondaryText)
             if !h.enabled { Text("DISABLED").font(.mono(.caption2, weight: .semibold)).foregroundStyle(Theme.warning) }
         }
@@ -166,7 +167,7 @@ struct WebhookEditor: View {
                 .themedRows()
             }
             .themedBackground()
-            .navigationTitle(webhook.id == 0 ? "New Webhook" : webhook.name)
+            .navigationTitle(webhook.id == 0 ? String(localized: "New Webhook") : webhook.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

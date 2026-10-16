@@ -53,10 +53,12 @@ struct Schedule: Identifiable, Encodable, Hashable {
 
     var summary: String {
         switch intervalType {
-        case .cron: "Cron: \(cronString ?? "")"
-        case .reaction: "After parent task (+\(delay)s)"
-        case .days: "Every \(interval) \(intervalType.label) at \(startTime)"
-        case .minutes, .hours: "Every \(interval) \(intervalType.label)"
+        case .cron: String(localized: "Cron: \(cronString ?? "")")
+        case .reaction: String(localized: "After parent task (+\(delay) s)")
+        case .days: String(localized: "\(String(localized: "Every \(interval) days")) at \(startTime)",
+                           comment: "Schedule summary: an interval such as “Every 2 days”, then the time of day.")
+        case .hours: String(localized: "Every \(interval) hours")
+        case .minutes: String(localized: "Every \(interval) minutes")
         }
     }
 }
@@ -67,11 +69,11 @@ enum ScheduleAction: String, Encodable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .start: "Start"
-        case .stop: "Stop"
-        case .restart: "Restart"
-        case .backup: "Backup"
-        case .command: "Command"
+        case .start: String(localized: "Start")
+        case .stop: String(localized: "Stop")
+        case .restart: String(localized: "Restart")
+        case .backup: String(localized: "Backup")
+        case .command: String(localized: "Command")
         }
     }
 }
@@ -83,11 +85,11 @@ enum IntervalType: String, Encodable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .minutes: "minutes"
-        case .hours: "hours"
-        case .days: "days"
-        case .reaction: "reaction"
-        case .cron: "cron"
+        case .minutes: String(localized: "Minutes")
+        case .hours: String(localized: "Hours")
+        case .days: String(localized: "Days")
+        case .reaction: String(localized: "After Task")
+        case .cron: String(localized: "Cron")
         }
     }
 }
@@ -251,11 +253,13 @@ struct Webhook: Identifiable, Hashable {
     /// Why the panel would refuse this webhook, or nil when it can be saved.
     var problem: String? {
         let name = name.trimmingCharacters(in: .whitespaces), bot = botName.trimmingCharacters(in: .whitespaces)
-        if name.isEmpty || name.count > Self.maxNameLength { return "Enter a name of up to 30 characters." }
-        if !Self.providers.contains(type) { return "Choose a service." }
-        if !WebhookURL.isValid(url) { return "Enter an http:// or https:// address with a host name or IP address." }
-        if bot.isEmpty || bot.count > Self.maxNameLength { return "Enter a bot name of up to 30 characters." }
-        if !Self.isValidColor(color) { return "Choose a color." }
+        if name.isEmpty || name.count > Self.maxNameLength { return String(localized: "Enter a name of up to 30 characters.") }
+        if !Self.providers.contains(type) { return String(localized: "Choose a service.") }
+        if !WebhookURL.isValid(url) {
+            return String(localized: "Enter an http:// or https:// address with a host name or IP address.")
+        }
+        if bot.isEmpty || bot.count > Self.maxNameLength { return String(localized: "Enter a bot name of up to 30 characters.") }
+        if !Self.isValidColor(color) { return String(localized: "Choose a color.") }
         return nil
     }
 
@@ -356,13 +360,13 @@ enum WebhookTrigger: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .serverStart: "Server started"
-        case .serverStop: "Server stopped"
-        case .crash: "Crash detected"
-        case .backup: "Backup"
-        case .jarUpdate: "Server JAR updated"
-        case .command: "Command sent"
-        case .kill: "Server killed"
+        case .serverStart: String(localized: "Server started")
+        case .serverStop: String(localized: "Server stopped")
+        case .crash: String(localized: "Crash detected")
+        case .backup: String(localized: "Backup")
+        case .jarUpdate: String(localized: "Server JAR updated")
+        case .command: String(localized: "Command sent")
+        case .kill: String(localized: "Server killed")
         }
     }
 
@@ -482,14 +486,14 @@ enum FileUpload {
     static func check(name: String, folder: String, size: Int) throws {
         guard ServerPath.isValidName(name) else { throw CraftyError.invalidName }
         guard name.allSatisfy(\.isASCII) else {
-            throw CraftyError.uploadRefused("Rename the file to use only English letters, digits and simple punctuation.")
+            throw CraftyError.uploadRefused(String(localized: "Rename the file to use only English letters, digits and simple punctuation."))
         }
         guard folder.allSatisfy(\.isASCII) else {
-            throw CraftyError.uploadRefused("Files can only be uploaded into folders with plain ASCII names.")
+            throw CraftyError.uploadRefused(String(localized: "Files can only be uploaded into folders with plain ASCII names."))
         }
-        guard size > 0 else { throw CraftyError.uploadRefused("The file is empty.") }
+        guard size > 0 else { throw CraftyError.uploadRefused(String(localized: "The file is empty.")) }
         guard size <= maxBytes else {
-            throw CraftyError.uploadRefused("Files larger than \(maxBytes / 1_048_576) MB can be uploaded in the web panel.")
+            throw CraftyError.uploadRefused(String(localized: "Upload files larger than \(maxBytes / 1_048_576) MB in the web panel."))
         }
     }
 }

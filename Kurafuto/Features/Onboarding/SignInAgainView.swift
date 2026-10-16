@@ -27,7 +27,7 @@ struct SignInAgainView: View {
                                 .keyboardType(.numberPad).textContentType(.oneTimeCode)
                         }
                     } header: {
-                        Text(app.activeInstance?.name ?? "Panel")
+                        Text(app.activeInstance?.name ?? String(localized: "Panel"))
                     } footer: {
                         Text("Your session on this panel has ended, for example because it expired or all sessions were signed out. Sign in again to continue.")
                     }
@@ -74,7 +74,7 @@ struct SignInAgainView: View {
             }
             app.reauthenticate(instance, token: token)
         } catch {
-            self.error = error.panelProblem == .sessionExpired ? "The panel rejected this token." : error.localizedDescription
+            self.error = error.panelProblem == .sessionExpired ? String(localized: "The panel rejected this token.") : error.localizedDescription
         }
     }
 }

@@ -41,8 +41,9 @@ struct ServerDetailView: View {
                 }
                 Divider()
                 Button(role: .destructive) {
-                    confirm = ConfirmAction(title: "Kill process?", message: "Kill stops the server immediately without saving.",
-                                            buttonLabel: "Kill") { await run(.kill) }
+                    confirm = ConfirmAction(title: String(localized: "Kill process?"),
+                                            message: String(localized: "Kill stops the server immediately without saving."),
+                                            buttonLabel: String(localized: "Kill")) { await run(.kill) }
                 } label: { Label("Kill", systemImage: ServerAction.kill.symbol) }
             } label: { Image(systemName: "ellipsis") }
             .accessibilityLabel("More actions")
@@ -64,7 +65,7 @@ struct ServerDetailView: View {
                 Text(stats?.desc?.strippingMinecraftFormatting ?? server.type.label)
                     .font(.subheadline)
                     .lineLimit(2)
-                Text("\(stats?.version ?? server.type.label) · :\(String(server.serverPort))")
+                Text(verbatim: "\(stats?.version ?? server.type.label) · :\(server.serverPort)")
                     .font(.mono(.caption))
                     .foregroundStyle(Theme.secondaryText)
             }
@@ -86,8 +87,9 @@ struct ServerDetailView: View {
     private func actionButton(_ a: ServerAction, enabled: Bool, color: Color) -> some View {
         Button {
             if a == .stop {
-                confirm = ConfirmAction(title: "Stop server?", message: "\(stats?.online ?? 0) players will be disconnected.",
-                                        buttonLabel: "Stop") { await run(a) }
+                confirm = ConfirmAction(title: String(localized: "Stop server?"),
+                                        message: String(localized: "\(stats?.online ?? 0) players will be disconnected."),
+                                        buttonLabel: String(localized: "Stop")) { await run(a) }
             } else { Task { await run(a) } }
         } label: {
             VStack(spacing: 4) {
@@ -149,7 +151,7 @@ struct ServerDetailView: View {
         }
     }
 
-    private func legend(_ title: String, _ color: Color) -> some View {
+    private func legend(_ title: LocalizedStringKey, _ color: Color) -> some View {
         HStack(spacing: 6) {
             Capsule().fill(color).frame(width: 12, height: 4)
             Text(title).font(.mono(.caption2, weight: .medium))
@@ -194,7 +196,7 @@ struct ServerDetailView: View {
         }
     }
 
-    private func detail<V: View>(_ title: String, @ViewBuilder value: () -> V) -> some View {
+    private func detail<V: View>(_ title: LocalizedStringKey, @ViewBuilder value: () -> V) -> some View {
         HStack {
             Text(title).foregroundStyle(Theme.secondaryText)
             Spacer()
@@ -204,7 +206,7 @@ struct ServerDetailView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func nav<D: View>(_ title: String, _ symbol: String, _ color: Color, badge: Int? = nil, last: Bool = false,
+    private func nav<D: View>(_ title: LocalizedStringKey, _ symbol: String, _ color: Color, badge: Int? = nil, last: Bool = false,
                               @ViewBuilder destination: @escaping () -> D) -> some View {
         NavigationLink { destination() } label: {
             HStack(spacing: 12) {
@@ -212,7 +214,7 @@ struct ServerDetailView: View {
                 Text(title).foregroundStyle(.primary)
                 Spacer()
                 if let badge, badge > 0 {
-                    Text("\(badge)").font(.mono(.caption, weight: .semibold))
+                    Text(verbatim: "\(badge)").font(.mono(.caption, weight: .semibold))
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Theme.players.opacity(0.16), in: Capsule())
                         .foregroundStyle(Theme.players)

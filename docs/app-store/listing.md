@@ -1,6 +1,6 @@
 # App Store Listing
 
-Primary language: **English (U.S.)**. Add a German localization later if wanted.
+Primary language: **English (U.S.)**. The app itself is localized into German, Japanese and Simplified Chinese; listing localizations for those languages can follow.
 
 | Field | Limit | Value |
 |---|---|---|

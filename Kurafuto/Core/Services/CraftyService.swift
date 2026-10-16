@@ -74,10 +74,14 @@ protocol CraftyService: AnyObject, Sendable {
 
     // Users & roles (superuser, or USER_CONFIG / ROLES_CONFIG)
     func panelAccess() async throws -> PanelAccess
+    /// With roles, last login and IP from each user's detail.
     func users() async throws -> [CraftyUser]
-    func saveUser(_ user: CraftyUser, password: String?) async throws
+    /// Creates the user when `id` is 0, otherwise sends only the changes.
+    func saveUser(id: Int, changes: UserChanges) async throws
     func deleteUser(id: Int) async throws
+    /// With each role's servers when the signed-in user may read them (superusers only), else `servers` is nil.
     func roles() async throws -> [Role]
+    /// Creates the role when its id is 0.
     func saveRole(_ role: Role) async throws
     func deleteRole(id: Int) async throws
 
@@ -103,18 +107,19 @@ enum CraftyError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: "Invalid address."
-        case .unauthorized: "Session expired. Please sign in again."
-        case .forbidden(let what): "Permission denied: \(what)"
-        case .server(let code, let detail): "Panel error \(code)\(detail.map { ": \($0)" } ?? "")"
-        case .decoding(let e): "Could not read response: \(e.localizedDescription)"
-        case .transport(let e): "Connection failed: \(e.localizedDescription)"
-        case .untrustedCertificate: "The certificate is self-signed. Verify the fingerprint and trust it?"
-        case .notSupportedByPanelVersion(let f): "\(f) is not supported by this panel version."
-        case .eulaRequired: "The Minecraft EULA must be accepted before this server can start."
-        case .fileChanged: "The file was changed on the panel after you opened it."
+        case .invalidURL: String(localized: "Invalid address.")
+        case .unauthorized: String(localized: "Session expired. Please sign in again.")
+        case .forbidden(let what): String(localized: "Permission denied: \(what)")
+        case .server(let code, let detail):
+            detail.map { String(localized: "Panel error \(code): \($0)") } ?? String(localized: "Panel error \(code)")
+        case .decoding(let e): String(localized: "Could not read response: \(e.localizedDescription)")
+        case .transport(let e): String(localized: "Connection failed: \(e.localizedDescription)")
+        case .untrustedCertificate: String(localized: "The certificate is self-signed. Verify the fingerprint and trust it?")
+        case .notSupportedByPanelVersion(let f): String(localized: "\(f) is not supported by this panel version.")
+        case .eulaRequired: String(localized: "The Minecraft EULA must be accepted before this server can start.")
+        case .fileChanged: String(localized: "The file was changed on the panel after you opened it.")
         case .uploadRefused(let reason): reason
-        case .invalidName: "Names cannot be empty, \".\" or \"..\" and cannot contain / or \\."
+        case .invalidName: String(localized: "Names cannot be empty, \".\" or \"..\" and cannot contain / or \\.")
         }
     }
 }

@@ -2,7 +2,13 @@ import SwiftUI
 
 @main
 struct KurafutoApp: App {
-    @State private var app = AppState.bootstrap()
+    @State private var app: AppState
+
+    init() {
+        let state = AppState.bootstrap()
+        _app = State(initialValue: state)
+        ServerShortcuts.app = state
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -24,6 +30,8 @@ final class AppState {
     var access: PanelAccess?
     /// The panel rejected the active token; RootView asks to sign in again.
     var sessionExpired = false
+    /// A widget asked to show this server (or its console or details); the Servers tab opens it once it lists it.
+    var requestedServer: ServerLink.Target?
 
     init(instanceStore: InstanceStore, service: CraftyService, activeInstance: Instance?, isMock: Bool,
          lock: AppLock = AppLock()) {
@@ -61,6 +69,7 @@ final class AppState {
         guard instance.id != activeInstance?.id else { return }
         activeInstance = instance
         access = nil
+        WidgetSync.clear()
         service = LiveCraftyService(client: APIClient(baseURL: instance.baseURL,
                                                       token: instanceStore.token(for: instance),
                                                       pinnedSHA256: instance.pinnedCertificateSHA256))
@@ -103,6 +112,7 @@ final class AppState {
         if let i = activeInstance, !isMock { instanceStore.remove(i) }
         activeInstance = nil
         access = nil
+        WidgetSync.clear()
     }
 }
 
@@ -146,6 +156,9 @@ struct RootView: View {
                 app.sessionExpired = true
             }
         }
+        .onOpenURL { url in
+            if let target = ServerLink.target(from: url) { app.requestedServer = target }
+        }
         .tint(Theme.accent)
         .preferredColorScheme(Appearance.shared.mode.colorScheme)
         // Hides panel addresses, IPs and console output from the app switcher snapshot.
@@ -169,20 +182,28 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Environment(AppState.self) private var app
+    @State private var tab = Tab.servers
+
+    enum Tab { case servers, panel, admin, settings }
 
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             DashboardView()
                 .tabItem { Label("Servers", systemImage: "server.rack") }
+                .tag(Tab.servers)
             PanelOverviewView()
                 .tabItem { Label("Panel", systemImage: "square.grid.2x2.fill") }
+                .tag(Tab.panel)
             if app.showsAdmin {
                 AdminView()
                     .tabItem { Label("Admin", systemImage: "shield.lefthalf.filled") }
+                    .tag(Tab.admin)
             }
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tag(Tab.settings)
         }
+        .onChange(of: app.requestedServer) { _, target in if target != nil { tab = .servers } }
         .task(id: ObjectIdentifier(app.service)) { await app.refreshAccess() }
     }
 }

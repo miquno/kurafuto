@@ -45,13 +45,16 @@
               <tr><td>Access token for your panel</td><td>iOS Keychain, this device only</td><td>So you stay signed in</td></tr>
               <tr><td>Panel name, address, username, certificate fingerprint</td><td>App storage, encrypted by iOS</td><td>So you can switch between panels</td></tr>
               <tr><td>App settings (e.g. Face ID lock, refresh interval)</td><td>App storage</td><td>Your preferences</td></tr>
+              <tr><td>For widgets: panel name, server names, status, versions, player counts and the names of up to eight players online, CPU and RAM of the last hour, time of the newest backup, time of the values, your color theme</td><td>Storage shared only between the app and its widgets, readable after the first unlock</td><td>So the widgets can show your servers without contacting the panel</td></tr>
             </tbody>
           </table>
         </div>
         <p>Face ID, Touch ID and your passcode are checked by iOS; Kurafuto only learns whether the check succeeded and never sees biometric data.</p>
-        <p>Your password is never stored; it is only used once to obtain a token from your panel. Server data, logs and files are shown while you look at them and are not saved by Kurafuto.</p>
-        <p>You can remove everything by signing out of a panel in Settings or by deleting the app.</p>
+        <p>Your password is never stored; it is only used once to obtain a token from your panel. Server data, logs and files are shown while you look at them and are not saved by Kurafuto, except the short widget summary above. Widgets never contact your panel, and they never show the panel address or your username. Player names appear only on Home Screen widgets and are hidden while your iPhone is locked; Lock Screen widgets show only numbers. If the Face ID lock is on, iOS hides all widget content while your iPhone is locked.</p>
+        <p>You can remove everything by signing out of a panel in Settings or by deleting the app. Signing out or switching panels also clears the widget summary.</p>
 
+        <h2>Siri and Shortcuts</h2>
+        <p>If you use Kurafuto with Siri or Shortcuts, the actions run inside the app on your iPhone and talk only to your panel. To recognize your servers by name, iOS learns their names from Kurafuto; Siri requests are handled by Apple under its own privacy terms. Your panel token never leaves the app.</p>
         <h2>Your panel</h2>
         <p>Your panel is operated by you (or whoever runs it). What the panel logs or stores – for example sign-in attempts or IP addresses – is governed by that panel and its operator, not by Kurafuto.</p>
 

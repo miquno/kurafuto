@@ -3,6 +3,7 @@
 name: Kurafuto
 options:
   bundleIdPrefix: dev.miquno
+  developmentLanguage: en
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -17,6 +18,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     DEAD_CODE_STRIPPING: YES
+    # String Catalogs: the compiler records every localizable string for Localizable.xcstrings.
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
 targets:
   Kurafuto:
     type: application
@@ -31,6 +35,8 @@ targets:
       properties:
         CFBundleDisplayName: Kurafuto
         CFBundleDevelopmentRegion: en
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Matches Theme.background in the default dark mode, so launch does not flash white.
         UILaunchScreen:
           UIColorName: LaunchBackground
@@ -38,9 +44,48 @@ targets:
         NSLocalNetworkUsageDescription: "Kurafuto connects to your self-hosted server panel on your local network."
         NSFaceIDUsageDescription: "Unlock Kurafuto with Face ID before controlling your servers."
         ITSAppUsesNonExemptEncryption: false
+        # Widgets open a server with kurafuto://server/<id>.
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.miquno.kurafuto
+            CFBundleURLSchemes: [kurafuto]
+    entitlements:
+      path: Kurafuto/Resources/Kurafuto.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.miquno.kurafuto]
+    dependencies:
+      - target: KurafutoWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto
+  KurafutoWidgets:
+    type: app-extension
+    platform: iOS
+    # Reads only the widget snapshot the app writes (ADR 0009); these app files are shared with it.
+    sources:
+      - path: KurafutoWidgets
+        excludes:
+          - "**/AGENTS.md"
+          - "**/CLAUDE.md"
+      - Kurafuto/Core/Storage/WidgetSnapshot.swift
+      - Kurafuto/Core/Models/ServerStats.swift
+      - Kurafuto/DesignSystem/Palette.swift
+      - Kurafuto/Resources/Localizable.xcstrings
+    info:
+      path: KurafutoWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Kurafuto
+        # Must match the app's version for App Store validation.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: KurafutoWidgets/KurafutoWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.dev.miquno.kurafuto]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.miquno.kurafuto.widgets
   KurafutoTests:
     type: bundle.unit-test
     platform: iOS
@@ -62,3 +107,8 @@ schemes:
         "-mock": true
     test:
       targets: [KurafutoTests]
+      # Tests expect English text and number formats whatever the simulator's language is;
+      # LocalizationTests load the other languages explicitly.
+      commandLineArguments:
+        "-AppleLanguages (en)": true
+        "-AppleLocale en_US": true

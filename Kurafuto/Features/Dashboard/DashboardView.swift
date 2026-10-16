@@ -47,7 +47,7 @@ struct DashboardView: View {
             }
             .themedBackground()
             .toolbar(.hidden, for: .navigationBar)
-            .navigationTitle(app.activeInstance?.name ?? "Servers")
+            .navigationTitle(app.activeInstance?.name ?? String(localized: "Servers"))
             .navigationDestination(for: DashboardRoute.self) { route in
                 switch route {
                 case .detail(let server): ServerDetailView(server: server)
@@ -67,6 +67,13 @@ struct DashboardView: View {
                 storedSelection = id ?? ""
                 Task { await model.selectionChanged() }
             }
+            .onChange(of: model.lastRefresh) {
+                publishWidgets()
+                openRequestedServer()
+            }
+            .onChange(of: app.requestedServer) { openRequestedServer() }
+            // Lets Siri recognise server names in "Start <server> in Kurafuto".
+            .onChange(of: model.servers.value?.map(\.serverName)) { KurafutoShortcuts.updateAppShortcutParameters() }
         }
     }
 
@@ -89,8 +96,12 @@ struct DashboardView: View {
     private func summary(_ servers: [Server]) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "person.2.fill")
-            Text("\(model.onlineCount)/\(servers.count) online · \(model.playerCount) players")
-                .contentTransition(.numericText())
+            HStack(spacing: 4) {
+                Text("\(model.onlineCount)/\(servers.count) online")
+                Text(verbatim: "·")
+                Text("\(model.playerCount) players")
+            }
+            .contentTransition(.numericText())
         }
         .font(.subheadline)
         .foregroundStyle(Theme.secondaryText)
@@ -113,6 +124,31 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: Widgets
+
+    private func publishWidgets() {
+        guard let servers = model.servers.value, let panel = app.activeInstance else { return }
+        let look = Appearance.shared
+        WidgetSync.publish(WidgetSync.snapshot(panelName: panel.name, servers: servers, stats: model.stats,
+                                               history: model.history, backups: model.lastBackups,
+                                               isPrivate: app.lock.isEnabled, mode: look.mode,
+                                               accent: look.preset(for: .accent)))
+    }
+
+    /// Only a server this panel lists is shown; a link to anything else is dropped.
+    private func openRequestedServer() {
+        guard let target = app.requestedServer, let servers = model.servers.value else { return }
+        app.requestedServer = nil
+        guard let server = servers.first(where: { $0.id == target.serverID }) else { return }
+        model.selectedID = server.id
+        path = NavigationPath()
+        switch target.screen {
+        case .console: path.append(DashboardRoute.console(server))
+        case .details: path.append(DashboardRoute.detail(server))
+        case nil: break
+        }
+    }
+
     // MARK: Actions
 
     @ViewBuilder private func moreActions(_ server: Server) -> some View {
@@ -126,8 +162,9 @@ struct DashboardView: View {
     /// Stop and kill ask first (and need Face ID when the app lock is on).
     private func request(_ action: ServerAction, on server: Server) {
         if action.isDestructive {
-            confirm = ConfirmAction(title: "\(action.label) \(server.serverName)?",
-                                    message: "Connected players will be disconnected.",
+            confirm = ConfirmAction(title: action == .kill ? String(localized: "Force kill \(server.serverName)?")
+                                                           : String(localized: "Stop \(server.serverName)?"),
+                                    message: String(localized: "Connected players will be disconnected."),
                                     buttonLabel: action.label) { await model.perform(action, on: server) }
         } else {
             Task { await model.perform(action, on: server) }

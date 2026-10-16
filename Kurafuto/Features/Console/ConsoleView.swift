@@ -57,7 +57,7 @@ struct ConsoleView: View {
 
                 HStack(spacing: 8) {
                     HStack(spacing: 8) {
-                        Text(">").font(.mono(.body, weight: .semibold)).foregroundStyle(Theme.accent)
+                        Text(verbatim: ">").font(.mono(.body, weight: .semibold)).foregroundStyle(Theme.accent)
                             .accessibilityHidden(true)
                         TextField("Command without /", text: $input)
                             .font(.mono(.body))

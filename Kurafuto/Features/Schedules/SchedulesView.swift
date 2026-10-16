@@ -69,8 +69,9 @@ struct SchedulesView: View {
                 }
                 .onDelete { idx in
                     let doomed = idx.map { list[$0] }
-                    confirm = ConfirmAction(title: doomed.count == 1 ? "Delete schedule?" : "Delete \(doomed.count) schedules?",
-                                            message: doomed.map(\.name).joined(separator: ", "), buttonLabel: "Delete") {
+                    confirm = ConfirmAction(title: String(localized: "Delete \(doomed.count) schedules?"),
+                                            message: doomed.map(\.name).joined(separator: ", "),
+                                            buttonLabel: String(localized: "Delete")) {
                         await $actionError.capture {
                             for s in doomed { try await app.service.deleteSchedule(id: s.id, serverID: server.id) }
                         }
@@ -130,7 +131,17 @@ struct ScheduleEditor: View {
     let onSave: (Schedule) -> Void
     @State private var mode: Mode = .interval
 
-    enum Mode: String, CaseIterable { case interval = "Interval", cron = "Cron", chain = "After Task" }
+    enum Mode: CaseIterable {
+        case interval, cron, chain
+
+        var label: String {
+            switch self {
+            case .interval: String(localized: "Interval")
+            case .cron: String(localized: "Cron")
+            case .chain: String(localized: "After Task")
+            }
+        }
+    }
 
     private var parents: [Schedule] { all.filter { $0.id != schedule.id } }
     private var modes: [Mode] { parents.isEmpty && mode != .chain ? [.interval, .cron] : Mode.allCases }
@@ -145,7 +156,7 @@ struct ScheduleEditor: View {
                     }
                     if schedule.action == .backup {
                         Picker("Backup", selection: $schedule.backupID) {
-                            if schedule.backupID == nil { Text("–").tag(String?.none) }
+                            if schedule.backupID == nil { Text(verbatim: "–").tag(String?.none) }
                             ForEach(backupConfigs) { Text($0.name).tag(Optional($0.id)) }
                         }
                     }
@@ -154,7 +165,7 @@ struct ScheduleEditor: View {
                             .monospaced().textInputAutocapitalization(.never).autocorrectionDisabled()
                     }
                     Section("When") {
-                        Picker("Type", selection: $mode) { ForEach(modes, id: \.self) { Text($0.rawValue) } }
+                        Picker("Type", selection: $mode) { ForEach(modes, id: \.self) { Text($0.label) } }
                             .pickerStyle(.segmented)
                         switch mode {
                         case .interval:
@@ -170,8 +181,8 @@ struct ScheduleEditor: View {
                                 .monospaced().textInputAutocapitalization(.never).autocorrectionDisabled()
                             Text("minute hour day month weekday").font(.mono(.caption2)).foregroundStyle(Theme.secondaryText)
                         case .chain:
-                            Picker("After", selection: $schedule.parent) {
-                                Text("–").tag(Int?.none)
+                            Picker("Run after", selection: $schedule.parent) {
+                                Text(verbatim: "–").tag(Int?.none)
                                 ForEach(parents) { Text($0.name).tag(Optional($0.id)) }
                             }
                             Stepper("Delay: \(schedule.delay) s", value: $schedule.delay, in: 0...3600, step: 30)

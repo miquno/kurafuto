@@ -47,7 +47,7 @@ struct PanelOverviewView: View {
                                 Label(d.mount, systemImage: "internaldrive").font(.mono(.footnote, weight: .medium))
                                     .foregroundStyle(.primary)
                                 Spacer()
-                                Text("\(Int(d.usedGB)) / \(Int(d.totalGB)) GB")
+                                Text(verbatim: "\(Int(d.usedGB)) / \(Int(d.totalGB)) GB")
                                     .font(.mono(.caption)).foregroundStyle(Theme.secondaryText)
                             }
                             MeterBar(value: d.usedGB, total: d.totalGB, color: Theme.storage)
