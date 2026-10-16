@@ -1,4 +1,4 @@
-/* Kurafuto – light Japanese look: kinari paper, sumi ink, one green, one vermilion seal.
+/* Kurafuto – light Japanese look: kinari paper, sumi ink, sakura accents, one vermilion seal.
    No JavaScript (site/AGENTS.md): every animation is CSS and sits behind
    prefers-reduced-motion: no-preference, so the static page is the final state. */
 
@@ -9,8 +9,9 @@
   --muted: #6a665d;
   --faint: #b3ad9f;
   --line: #e3ddd0;
-  --accent: #2f7a3c;
-  --accent-soft: #e2ecdc;
+  --accent: #b0456a;
+  --accent-soft: #f8e2e8;
+  --sakura: #efb4c4;
   --shu: #c4402b;
   --shu-text: #fdfbf7;
   --frame: #1c1b18;
@@ -27,8 +28,9 @@
     --muted: #a29d91;
     --faint: #57544d;
     --line: #2a2925;
-    --accent: #62c36f;
-    --accent-soft: #1a2a1c;
+    --accent: #f2a9bd;
+    --accent-soft: #35212a;
+    --sakura: #e597ad;
     --shu: #d4563f;
     --shu-text: #121210;
     --frame: #33322d;
@@ -82,7 +84,7 @@ nav.site a:hover::after, nav.site a[aria-current]::after { transform: scaleX(1);
 /* Shared type */
 .kicker { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; color: var(--muted); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; }
 .kicker [lang="ja"] { color: var(--text); font-size: 15px; letter-spacing: .3em; text-transform: none; }
-.kicker::before { content: ""; width: 28px; height: 1px; background: var(--shu); flex: none; }
+.kicker::before { content: ""; width: 28px; height: 1px; background: var(--sakura); flex: none; }
 .kicker span { white-space: nowrap; }
 @media (max-width: 480px) { .kicker { letter-spacing: .1em; } .kicker::before { width: 16px; } .kicker [lang="ja"] { letter-spacing: .15em; } }
 h1, h2, h3 { font-weight: 600; letter-spacing: -.015em; }
@@ -110,13 +112,16 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.015em; }
   box-shadow: inset 0 0 0 3px var(--shu), inset 0 0 0 4px color-mix(in srgb, var(--shu-text) 60%, transparent);
 }
 
+/* Sakura petals: only rendered with motion allowed */
+.petal { display: none; }
+
 /* Phone mockup (decorative, always the app's dark design) */
 .phone {
   position: relative; width: 250px; padding: 9px; border-radius: 44px; background: var(--frame);
   box-shadow: 0 50px 80px -40px rgb(28 27 24 / .5);
 }
 .screen {
-  --s-bg: #0f100e; --s-card: #1b1c19; --s-text: #ece8de; --s-muted: #8d887d; --s-green: #62c36f;
+  --s-bg: #0f100e; --s-card: #1b1c19; --s-text: #ece8de; --s-muted: #8d887d; --s-accent: #f2a9bd;
   position: relative; height: 500px; overflow: hidden; border-radius: 35px; background: var(--s-bg); color: var(--s-text);
   padding: 46px 14px 14px; font-size: 13px; line-height: 1.3;
 }
@@ -126,17 +131,17 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.015em; }
 .p-head { display: flex; justify-content: space-between; color: var(--s-muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .p-head b { color: var(--s-text); font-size: 13px; letter-spacing: 0; }
 .p-chart svg { display: block; width: 100%; height: 72px; margin-top: 8px; }
-.p-chart .line { fill: none; stroke: var(--s-green); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.p-chart .area { fill: var(--s-green); opacity: .14; }
+.p-chart .line { fill: none; stroke: var(--s-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.p-chart .area { fill: var(--s-accent); opacity: .14; }
 .p-list { list-style: none; margin: 0; padding: 0; }
 .p-list li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 10px; background: var(--s-card); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px; }
 .p-list .n { font-weight: 600; font-size: 14px; }
 .p-list .m { color: var(--s-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .p-list .bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgb(255 255 255 / .07); overflow: hidden; }
-.p-list .bar span { display: block; height: 100%; border-radius: inherit; background: var(--s-green); transform-origin: left; }
+.p-list .bar span { display: block; height: 100%; border-radius: inherit; background: var(--s-accent); transform-origin: left; }
 .p-list .w1 { width: 46%; } .p-list .w2 { width: 22%; } .p-list .w3 { width: 0; }
 .st { width: 8px; height: 8px; border-radius: 50%; background: #5a574f; }
-.st.on { background: var(--s-green); --pulse: var(--s-green); }
+.st.on { background: var(--s-accent); --pulse: var(--s-accent); }
 
 @media (max-width: 859px) {
   .hero-art { min-height: 0; padding: 40px 0 16px; }
@@ -160,11 +165,11 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.015em; }
 @media (min-width: 640px) { .features li { padding-right: 36px; } }
 .features li::after {
   content: ""; position: absolute; left: 0; top: -1px; height: 1px; width: 100%;
-  background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform .6s var(--ease);
+  background: var(--sakura); transform: scaleX(0); transform-origin: left; transition: transform .6s var(--ease);
 }
 .features li:hover::after { transform: scaleX(1); }
 .features .num { display: block; margin-bottom: 14px; font-size: 22px; line-height: 1; color: var(--faint); transition: color .4s, translate .4s var(--ease); }
-.features li:hover .num { color: var(--shu); translate: 0 -2px; }
+.features li:hover .num { color: var(--accent); translate: 0 -2px; }
 .features h3 { font-size: 18px; margin: 0 0 6px; }
 .features p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
 
@@ -193,7 +198,7 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.015em; }
 article.doc { padding: 56px 0 88px; max-width: 44em; }
 article.doc h1 { font-size: clamp(34px, 5vw, 48px); line-height: 1.1; margin: 0 0 10px; letter-spacing: -.025em; }
 article.doc h2 { font-size: 21px; margin: 48px 0 10px; padding-top: 22px; border-top: 1px solid var(--line); }
-article.doc .meta + p { margin: 36px 0; padding: 20px 24px; border-left: 2px solid var(--accent); background: var(--surface); border-radius: 0 12px 12px 0; }
+article.doc .meta + p { margin: 36px 0; padding: 20px 24px; border-left: 2px solid var(--sakura); background: var(--surface); border-radius: 0 12px 12px 0; }
 .meta { color: var(--muted); font-size: 15px; }
 .doc-aside { display: none; }
 @media (min-width: 1000px) {
@@ -249,6 +254,18 @@ footer.site .sig span { display: grid; place-items: center; width: 24px; height:
   .st.on, .badge::before { animation: pulse 2.4s ease-out infinite; }
   .wave rect { animation: tide 60s linear infinite; }
 
+  .petal {
+    display: block; position: absolute; top: -4%; z-index: 1; width: 14px; height: 11px;
+    border-radius: 12px 1px 12px 1px; background: var(--sakura); opacity: 0; pointer-events: none;
+    animation: fall 12s linear infinite;
+  }
+  .petal:nth-of-type(1) { left: 8%; animation-delay: 1s; }
+  .petal:nth-of-type(2) { left: 26%; width: 11px; height: 8px; animation-duration: 14s; animation-delay: 4.5s; }
+  .petal:nth-of-type(3) { left: 48%; animation-duration: 10s; animation-delay: 2.5s; }
+  .petal:nth-of-type(4) { left: 66%; width: 12px; height: 9px; animation-duration: 13s; animation-delay: 7s; }
+  .petal:nth-of-type(5) { left: 84%; animation-duration: 11s; animation-delay: 3.5s; }
+  .petal:nth-of-type(6) { left: 38%; width: 10px; height: 7px; animation-duration: 15s; animation-delay: 9s; }
+
   .badge { transition: border-color .3s, translate .3s var(--ease); }
   .badge:hover { border-color: var(--accent); translate: 0 -1px; }
 
@@ -275,4 +292,12 @@ footer.site .sig span { display: grid; place-items: center; width: 24px; height:
 @keyframes reveal { from { opacity: 0; transform: translateY(28px); } }
 @keyframes drift { from { transform: translateY(48px); opacity: .3; } to { transform: translateY(-48px); } }
 @keyframes tide { to { transform: translateX(-480px); } }
+@keyframes fall {
+  0% { top: -4%; opacity: 0; translate: 0 0; rotate: 0deg; }
+  10% { opacity: .9; }
+  30% { translate: 28px 0; rotate: 110deg; }
+  55% { translate: -16px 0; rotate: 230deg; }
+  80% { translate: 22px 0; rotate: 340deg; opacity: .8; }
+  100% { top: 100%; opacity: 0; translate: -10px 0; rotate: 420deg; }
+}
 @keyframes header-line { to { border-bottom-color: var(--line); } }
