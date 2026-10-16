@@ -4,7 +4,7 @@ GitHub Actions workflows, issue and pull request templates, and code owners. (Na
 
 ## Workflows
 
-- `workflows/ci.yml` – required check `build-and-test`: generates the project with XcodeGen, builds without code signing and runs `KurafutoTests` on an iOS simulator. Runs on pull requests, pushes to `main` and manual dispatch.
+- `workflows/ci.yml` – required check `build-and-test`: generates the project with XcodeGen, builds without code signing, runs `KurafutoTests` on an iOS simulator and checks the String Catalog (`scripts/check-localizations.sh`). Runs on pull requests, pushes to `main` and manual dispatch.
 - `workflows/dco.yml` – required check `DCO`, implemented in `scripts/check-dco.sh`.
 - `workflows/pages.yml` – deploys `site/` to GitHub Pages on pushes to `main` that touch `site/`. The only job with more than `contents: read` (`pages: write`, `id-token: write`, required by `actions/deploy-pages`). Not a required check.
 

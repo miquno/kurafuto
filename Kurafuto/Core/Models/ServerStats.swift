@@ -160,11 +160,11 @@ enum ServerStatus: String {
 
     var label: String {
         switch self {
-        case .online: "Online"
-        case .offline: "Offline"
-        case .starting: "Starting…"
-        case .updating: "Updating…"
-        case .crashed: "Crashed"
+        case .online: String(localized: "Online")
+        case .offline: String(localized: "Offline")
+        case .starting: String(localized: "Starting…")
+        case .updating: String(localized: "Updating…")
+        case .crashed: String(localized: "Crashed")
         }
     }
 }

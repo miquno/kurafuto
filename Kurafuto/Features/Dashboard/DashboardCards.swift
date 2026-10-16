@@ -12,7 +12,7 @@ struct DashboardHeader: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("KURAFUTO  クラフト")
+                Text(verbatim: "KURAFUTO  クラフト")
                     .font(.caption.weight(.medium)).tracking(1.2)
                     .foregroundStyle(Theme.secondaryText)
                     .accessibilityHidden(true)
@@ -39,7 +39,7 @@ struct DashboardHeader: View {
     }
 
     @ViewBuilder private var panelTitle: some View {
-        let name = Text(app.activeInstance?.name ?? "Servers")
+        let name = Text(app.activeInstance?.name ?? String(localized: "Servers"))
             .font(.largeTitle.weight(.bold))
             .foregroundStyle(.primary)
             .lineLimit(1).minimumScaleFactor(0.6)
@@ -57,18 +57,18 @@ struct DashboardHeader: View {
                     Image(systemName: "chevron.down").font(.title3.weight(.semibold)).foregroundStyle(Theme.secondaryText)
                 }
             }
-            .accessibilityLabel("\(app.activeInstance?.name ?? "Panel"), switch panel")
+            .accessibilityLabel("\(app.activeInstance?.name ?? String(localized: "Panel")), switch panel")
         }
     }
 
     private var subtitle: String {
-        if app.isMock { return "Demo · sample data" }
+        if app.isMock { return String(localized: "Demo · sample data") }
         let host = app.activeInstance?.baseURL.host() ?? ""
         return switch problem {
-        case nil: "\(host) · Connected"
-        case .offline: "\(host) · Unreachable"
-        case .sessionExpired: "\(host) · Signed out"
-        case .permissionDenied, .other: "\(host) · Values not updating"
+        case nil: String(localized: "\(host) · Connected")
+        case .offline: String(localized: "\(host) · Unreachable")
+        case .sessionExpired: String(localized: "\(host) · Signed out")
+        case .permissionDenied, .other: String(localized: "\(host) · Values not updating")
         }
     }
 }
@@ -173,9 +173,12 @@ struct ServerOverviewCard: View {
                     Text(server.serverName).font(.title2.weight(.bold)).foregroundStyle(.primary).lineLimit(2)
                     HStack(spacing: 10) {
                         Text(stats?.version ?? server.type.label).font(.subheadline).foregroundStyle(Theme.secondaryText)
+                            .lineLimit(1)
                         StatusPill(status: status)
                     }
                 }
+                // Longer translations of the link below wrap before the version and status do.
+                .layoutPriority(1)
                 Spacer(minLength: 8)
                 NavigationLink(value: DashboardRoute.detail(server)) {
                     HStack(spacing: 4) {
@@ -192,7 +195,7 @@ struct ServerOverviewCard: View {
                              samples: history.map { ($0.date, $0.cpu) }, ceiling: 100, axis: .leading,
                              label: { "\(Int($0)) %" })
                 Rectangle().fill(Theme.divider).frame(width: 1).padding(.vertical, 4)
-                MetricColumn(title: "RAM", value: ramText, caption: ramCeiling.map { "of \(Self.gigabytes($0))" },
+                MetricColumn(title: "RAM", value: ramText, caption: ramCeiling.map { String(localized: "of \(Self.gigabytes($0))") },
                              color: Theme.ram, samples: history.map { ($0.date, $0.memBytes) },
                              ceiling: ramCeiling ?? max(history.map(\.memBytes).max() ?? 0, 1), axis: .trailing,
                              label: { Self.gigabytes($0) })
@@ -210,7 +213,8 @@ struct ServerOverviewCard: View {
 
     static func gigabytes(_ bytes: Double) -> String {
         let gb = bytes / 1_073_741_824
-        return gb >= 10 || gb == gb.rounded() ? "\(Int(gb.rounded())) GB" : String(format: "%.1f GB", gb)
+        let number = gb >= 10 ? gb.rounded() : gb
+        return number.formatted(.number.precision(.fractionLength(0...1))) + " GB"
     }
 }
 
@@ -221,8 +225,9 @@ struct StatusPill: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle().fill(Theme.color(for: status)).frame(width: 8, height: 8)
-            Text(status.label).font(.subheadline.weight(.medium))
+            Text(status.label).font(.subheadline.weight(.medium)).lineLimit(1)
         }
+        .fixedSize()
         .foregroundStyle(Theme.color(for: status))
         .padding(.horizontal, 10).padding(.vertical, 4)
         .background(Theme.color(for: status).opacity(0.14), in: Capsule())
@@ -231,7 +236,7 @@ struct StatusPill: View {
 
 /// A big current value and its last hour as an area chart.
 struct MetricColumn: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: String
     let caption: String?
     let color: Color
@@ -253,7 +258,7 @@ struct MetricColumn: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
+        .accessibilityLabel(Text(title))
         .accessibilityValue(caption.map { "\(value) \($0)" } ?? value)
     }
 
@@ -261,10 +266,10 @@ struct MetricColumn: View {
         let end = Date.now
         Chart {
             ForEach(samples, id: \.date) { s in
-                AreaMark(x: .value("Time", s.date), y: .value(title, min(s.value, ceiling)))
+                AreaMark(x: .value("Time", s.date), y: .value(String(localized: title), min(s.value, ceiling)))
                     .foregroundStyle(LinearGradient(colors: [color.opacity(0.16), color.opacity(0)], startPoint: .top, endPoint: .bottom))
                     .interpolationMethod(.monotone)
-                LineMark(x: .value("Time", s.date), y: .value(title, min(s.value, ceiling)))
+                LineMark(x: .value("Time", s.date), y: .value(String(localized: title), min(s.value, ceiling)))
                     .foregroundStyle(color)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                     .interpolationMethod(.monotone)
@@ -360,7 +365,7 @@ struct ServerActionBar: View {
         .labelStyle(.titleAndIcon)
     }
 
-    private func button(_ action: ServerAction, _ title: String, _ symbol: String, _ style: InstrumentButtonStyle) -> some View {
+    private func button(_ action: ServerAction, _ title: LocalizedStringKey, _ symbol: String, _ style: InstrumentButtonStyle) -> some View {
         Button { perform(action) } label: {
             Group { if busy == action { ProgressView() } else { Label(title, systemImage: symbol) } }
                 .frame(minHeight: 52)

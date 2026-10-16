@@ -13,7 +13,7 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 | `Core/Storage/` | `KeychainStore` (tokens), `InstanceStore` (panel list in Application Support, no secrets) |
 | `DesignSystem/` | "Instrument" design: `Appearance` (theme mode + per-metric accent presets, UserDefaults), `Theme` (palette), cards, `IconTile`, `StatusDot`/`StatusBadge`, `RingGauge`/`GaugeTile`, `MeterBar`, `.entrance()` animation, `InstrumentButtonStyle`, `Loadable`/`LoadableView` (problem-specific error states), `StaleValuesBanner`, `.errorAlert`, `ConfirmAction`, `PixelAvatar` (player faces drawn locally, never loaded), `PlayerCount`, `ServerIcon` |
 | `Features/<Area>/` | One folder per panel area (Dashboard = Servers tab: `DashboardModel` holds loading and polling, `DashboardCards` the views): Onboarding, Dashboard, ServerDetail, Console, Players, Schedules, Backups, Files, Webhooks, ServerSettings, CreateServer, Admin, Panel, Settings |
-| `Resources/` | `PrivacyInfo.xcprivacy`; `Assets.xcassets` (`AppIcon`, single 1024 px image rendered by `scripts/make-app-icon.swift`; `LaunchBackground` = dark `Theme.background`); generated `Info.plist` (gitignored) |
+| `Resources/` | `Localizable.xcstrings` (all UI text, English source with `de`, `ja`, `zh-Hans`) and `InfoPlist.xcstrings` (permission prompts); `PrivacyInfo.xcprivacy`; `Assets.xcassets` (`AppIcon`, single 1024 px image rendered by `scripts/make-app-icon.swift`; `LaunchBackground` = dark `Theme.background`); generated `Info.plist` (gitignored) |
 
 ## Rules
 
@@ -28,3 +28,4 @@ All app sources. XcodeGen picks up new files through the folder glob in `project
 - Lists and forms use `.themedBackground()` and wrap their content in a `Group { … }.themedRows()`; custom screens use `.card()`.
 - Motion goes through `.entrance()`, `RingGauge` and `MeterBar`, which respect Reduce Motion. Don't add animations that ignore it.
 - Do not add a network host other than the user's panel (see root `AGENTS.md`, privacy rules).
+- Localization: literals in `Text`, `Button`, `Label`, `Toggle`, `.navigationTitle` and friends are localized automatically. Text that travels as `String` (model labels, alert texts, `ConfirmAction`, errors) uses `String(localized:)`; design-system components take `LocalizedStringResource`. Panel data (names, MOTDs, logs, files) stays a plain `String` or `Text(verbatim:)` and is never looked up. Counts get plural variations in the catalog instead of `count == 1 ? … : …`; write whole sentences with placeholders instead of joining fragments. After adding strings, build in Xcode (or `xcstringstool sync`) and translate them; tests run in English (`-AppleLanguages (en)` in the scheme).

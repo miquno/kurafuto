@@ -47,7 +47,7 @@ struct DashboardView: View {
             }
             .themedBackground()
             .toolbar(.hidden, for: .navigationBar)
-            .navigationTitle(app.activeInstance?.name ?? "Servers")
+            .navigationTitle(app.activeInstance?.name ?? String(localized: "Servers"))
             .navigationDestination(for: DashboardRoute.self) { route in
                 switch route {
                 case .detail(let server): ServerDetailView(server: server)
@@ -89,8 +89,12 @@ struct DashboardView: View {
     private func summary(_ servers: [Server]) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "person.2.fill")
-            Text("\(model.onlineCount)/\(servers.count) online · \(model.playerCount) players")
-                .contentTransition(.numericText())
+            HStack(spacing: 4) {
+                Text("\(model.onlineCount)/\(servers.count) online")
+                Text(verbatim: "·")
+                Text("\(model.playerCount) players")
+            }
+            .contentTransition(.numericText())
         }
         .font(.subheadline)
         .foregroundStyle(Theme.secondaryText)
@@ -126,8 +130,9 @@ struct DashboardView: View {
     /// Stop and kill ask first (and need Face ID when the app lock is on).
     private func request(_ action: ServerAction, on server: Server) {
         if action.isDestructive {
-            confirm = ConfirmAction(title: "\(action.label) \(server.serverName)?",
-                                    message: "Connected players will be disconnected.",
+            confirm = ConfirmAction(title: action == .kill ? String(localized: "Force kill \(server.serverName)?")
+                                                           : String(localized: "Stop \(server.serverName)?"),
+                                    message: String(localized: "Connected players will be disconnected."),
                                     buttonLabel: action.label) { await model.perform(action, on: server) }
         } else {
             Task { await model.perform(action, on: server) }

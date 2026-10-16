@@ -8,9 +8,9 @@ enum ThemeMode: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .dark: "Dark"
-        case .gray: "Gray"
-        case .light: "Light"
+        case .dark: String(localized: "Dark")
+        case .gray: String(localized: "Gray")
+        case .light: String(localized: "Light")
         }
     }
 
@@ -25,11 +25,11 @@ enum AccentRole: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .accent: "Accent"
-        case .cpu: "CPU"
-        case .ram: "RAM"
-        case .players: "Players"
-        case .storage: "Storage"
+        case .accent: String(localized: "Accent")
+        case .cpu: String(localized: "CPU")
+        case .ram: String(localized: "RAM")
+        case .players: String(localized: "Players")
+        case .storage: String(localized: "Storage")
         }
     }
 
@@ -60,7 +60,17 @@ enum AccentPreset: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var label: String { rawValue.capitalized }
+    var label: String {
+        switch self {
+        case .cyan: String(localized: "Cyan")
+        case .green: String(localized: "Green")
+        case .violet: String(localized: "Violet")
+        case .amber: String(localized: "Amber")
+        case .pink: String(localized: "Pink")
+        case .blue: String(localized: "Blue")
+        case .orange: String(localized: "Orange")
+        }
+    }
 
     func color(for mode: ThemeMode) -> Color {
         let hex: UInt32 = switch (self, mode == .light) {

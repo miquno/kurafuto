@@ -47,5 +47,9 @@ jobs:
             -scheme Kurafuto \
             -destination "$DESTINATION" \
             -only-testing:KurafutoTests \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             -quiet
+
+      - name: Check localizations
+        run: ./scripts/check-localizations.sh build

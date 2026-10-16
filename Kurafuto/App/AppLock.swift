@@ -7,10 +7,10 @@ enum DeviceAuthKind: Equatable {
 
     var label: String {
         switch self {
-        case .faceID: "Face ID"
-        case .touchID: "Touch ID"
-        case .opticID: "Optic ID"
-        case .passcode, .unavailable: "Passcode"
+        case .faceID: String(localized: "Face ID")
+        case .touchID: String(localized: "Touch ID")
+        case .opticID: String(localized: "Optic ID")
+        case .passcode, .unavailable: String(localized: "Passcode")
         }
     }
 
@@ -73,7 +73,7 @@ final class AppLock {
     @MainActor
     func unlock() async {
         guard isLocked, !isAuthenticating else { return }
-        if await authenticate("Unlock Kurafuto") { isLocked = false }
+        if await authenticate(String(localized: "Unlock Kurafuto")) { isLocked = false }
     }
 
     @MainActor
@@ -93,7 +93,7 @@ final class AppLock {
     @MainActor
     func setEnabled(_ enabled: Bool) async {
         guard enabled != isEnabled, kind != .unavailable,
-              await authenticate(enabled ? "Turn on the app lock" : "Turn off the app lock") else { return }
+              await authenticate(enabled ? String(localized: "Turn on the app lock") : String(localized: "Turn off the app lock")) else { return }
         isEnabled = enabled
         defaults?.set(enabled, forKey: Self.defaultsKey)
     }

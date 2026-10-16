@@ -40,7 +40,7 @@ struct ServerSettingsView: View {
             Button(deleteFiles ? "Delete" : "Remove", role: .destructive) {
                 guard deleteText == server.serverName else { return }
                 Task {
-                    guard await app.lock.authorize("Delete \(server.serverName)") else { return }
+                    guard await app.lock.authorize(String(localized: "Delete \(server.serverName)")) else { return }
                     if await $actionError.capture({ try await app.service.deleteServer(id: server.id, deleteFiles: deleteFiles) }) {
                         dismiss()
                     }
@@ -112,7 +112,7 @@ struct ServerSettingsView: View {
                         .font(.mono(.footnote)).multilineTextAlignment(.trailing).keyboardType(.numberPad)
                 }
             } else {
-                LabeledContent("Address") { Text("\(server.serverIP):\(String(server.serverPort))").font(.mono(.footnote)) }
+                LabeledContent("Address") { Text(verbatim: "\(server.serverIP):\(server.serverPort)").font(.mono(.footnote)) }
             }
             if let count = d.wrappedValue.countPlayers {
                 Toggle("Count players in panel total", isOn: Binding(get: { count }, set: { d.wrappedValue.countPlayers = $0 }))
