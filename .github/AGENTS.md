@@ -22,10 +22,10 @@ GitHub Actions workflows, issue and pull request templates, and code owners. (Na
 These are not in code; keep this list in sync with the live settings.
 
 - Ruleset `main` (ID `25093336`): no deletion, no force-push, no bypass actors; pull requests required, conversation resolution required, squash merge only; required status checks `build-and-test` and `DCO` (GitHub Actions app).
-- Squash merge as the only merge method; delete branches after merge.
+- Squash merge as the only merge method; delete branches after merge; auto-merge allowed (merges only once the required checks pass).
 - Secret scanning and push protection enabled; private vulnerability reporting enabled; Dependabot **alerts** enabled, automatic pull requests disabled.
 - Actions: default `GITHUB_TOKEN` read-only; workflows may not create or approve pull requests.
-- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the account's Pages settings. The domain is verified for the account (protects it from takeover); the certificate covers `getkurafuto.app` and `www.getkurafuto.app`, but only the apex has DNS records.
+- Pages: source "GitHub Actions", custom domain `getkurafuto.app`, "Enforce HTTPS" on. DNS at the registrar: `A`/`AAAA` records for the apex pointing to GitHub Pages, and verify the domain under the `miqunosoft` organization's Pages settings (TXT record `_github-pages-challenge-miqunosoft`). The domain is verified for the organization (protects it from takeover; a domain verified for a personal account only works for that account's repositories); the certificate covers `getkurafuto.app` and `www.getkurafuto.app`, but only the apex has DNS records.
 - Code-owner review not required while there is a single maintainer.
 
 ## Gotchas
