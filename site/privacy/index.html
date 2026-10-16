@@ -12,19 +12,22 @@
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <div class="wrap">
-    <header class="site">
-      <a class="brand" href="/"><img src="/icon.svg" alt=""> Kurafuto</a>
+  <header class="site">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/icon.svg" alt=""> Kurafuto <small lang="ja">クラフト</small></a>
       <nav class="site" aria-label="Main">
         <a href="/privacy/" aria-current="page">Privacy</a>
         <a href="https://github.com/miquno/kurafuto">Source</a>
       </nav>
-    </header>
+    </div>
+  </header>
 
-    <main id="main">
+  <main id="main">
+    <div class="wrap">
       <article class="doc">
-        <h1>Privacy Policy</h1>
-        <p class="meta">Last updated: 15 October 2026</p>
+        <p class="kicker rise" aria-hidden="true"><span lang="ja">個人情報</span> Policy</p>
+        <h1 class="rise d1">Privacy Policy</h1>
+        <p class="meta rise d2">Last updated: 15 October 2026</p>
 
         <p><strong>Short version: Kurafuto collects nothing. We do not have a server, and we never see your data.</strong></p>
 
@@ -71,12 +74,31 @@
         <h2>Contact</h2>
         <p>Questions about privacy: <a href="mailto:support@getkurafuto.app">support@getkurafuto.app</a> or an issue at <a href="https://github.com/miquno/kurafuto/issues">github.com/miquno/kurafuto/issues</a>. Security issues: please use <a href="https://github.com/miquno/kurafuto/security/advisories/new">private vulnerability reporting</a>.</p>
       </article>
-    </main>
+      <p class="doc-aside" lang="ja" aria-hidden="true">個人情報保護方針</p>
+    </div>
+  </main>
 
-    <footer class="site">
-      <p>Kurafuto is an unofficial app and is not affiliated with or endorsed by Arcadia Technology, Mojang or Microsoft.</p>
-      <p><a href="/">Home</a> · <a href="https://github.com/miquno/kurafuto">Source code</a> · <a href="mailto:support@getkurafuto.app">support@getkurafuto.app</a></p>
-    </footer>
-  </div>
+  <svg class="wave" aria-hidden="true">
+    <defs>
+      <g id="fan"><circle r="24"/><circle r="19"/><circle r="14"/><circle r="9"/><circle r="4"/></g>
+      <pattern id="seigaiha" width="48" height="24" patternUnits="userSpaceOnUse">
+        <use href="#fan" x="0" y="0"/><use href="#fan" x="48" y="0"/>
+        <use href="#fan" x="24" y="12"/>
+        <use href="#fan" x="0" y="24"/><use href="#fan" x="48" y="24"/>
+        <use href="#fan" x="24" y="36"/>
+      </pattern>
+    </defs>
+    <rect width="4800" height="96" fill="url(#seigaiha)"/>
+  </svg>
+
+  <footer class="site">
+    <div class="wrap">
+      <div>
+        <p class="sig"><span lang="ja" aria-hidden="true">匠</span> Kurafuto</p>
+        <p>Kurafuto is an unofficial app and is not affiliated with or endorsed by Arcadia Technology, Mojang or Microsoft.</p>
+      </div>
+      <p class="links"><a href="/">Home</a> · <a href="https://github.com/miquno/kurafuto">Source code</a> · <a href="mailto:support@getkurafuto.app">support@getkurafuto.app</a></p>
+    </div>
+  </footer>
 </body>
 </html>

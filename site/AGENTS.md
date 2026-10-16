@@ -15,4 +15,5 @@ The static website served at **https://getkurafuto.app** via GitHub Pages (`.git
 - `privacy/index.html` mirrors `PRIVACY.md`. Change both in the same pull request.
 - No JavaScript, cookies, analytics, web fonts, CDNs, embeds or images from other hosts. Every page keeps the CSP meta tag (`default-src 'none'`) and `referrer: no-referrer`.
 - Light and dark mode via `prefers-color-scheme`; pages must stay readable at 320 px width and 200 % zoom.
+- Animations are CSS only and live inside `@media (prefers-reduced-motion: no-preference)`; without them every page must look finished. Japanese ornaments use system Mincho fonts and are `aria-hidden`.
 - Adding anything that loads from another origin needs an ADR and updates to `PRIVACY.md` and the threat model.
