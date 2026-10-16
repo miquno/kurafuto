@@ -289,9 +289,11 @@ struct MetricColumn: View {
                 }
             }
         }
-        .overlay {
-            if samples.count < 2 {
-                Text("No data yet").font(.caption).foregroundStyle(Theme.secondaryText)
+        .chartPlotStyle { plot in
+            plot.overlay {
+                if samples.count < 2 {
+                    Text("No data yet").font(.caption).foregroundStyle(Theme.secondaryText)
+                }
             }
         }
     }
