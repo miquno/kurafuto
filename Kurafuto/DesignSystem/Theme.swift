@@ -17,67 +17,17 @@ enum Theme {
     static var surface: Color { surface(for: mode) }
 
     /// Per-mode variants, e.g. for the theme previews in Settings.
-    static func background(for mode: ThemeMode) -> Color {
-        switch mode {
-        case .dark: Color(hex: 0x0A0C0F)
-        case .gray: Color(hex: 0x1C2026)
-        case .light: Color(hex: 0xF2F4F6)
-        }
-    }
-
-    static func surface(for mode: ThemeMode) -> Color {
-        switch mode {
-        case .dark: Color(hex: 0x12161B)
-        case .gray: Color(hex: 0x262B32)
-        case .light: Color(hex: 0xFFFFFF)
-        }
-    }
-
-    static func primaryText(for mode: ThemeMode) -> Color {
-        mode == .light ? Color(hex: 0x0D0F12) : Color(hex: 0xEDEFF2)
-    }
+    static func background(for mode: ThemeMode) -> Color { Palette.background(mode) }
+    static func surface(for mode: ThemeMode) -> Color { Palette.surface(mode) }
+    static func primaryText(for mode: ThemeMode) -> Color { Palette.primaryText(mode) }
 
     /// Inset areas inside a card (gauge tiles, icon tiles).
-    static var sunken: Color {
-        switch mode {
-        case .dark: Color(hex: 0x0D1014)
-        case .gray: Color(hex: 0x20252B)
-        case .light: Color(hex: 0xF4F6F8)
-        }
-    }
-
-    static var stroke: Color {
-        switch mode {
-        case .dark: Color(hex: 0x252B33)
-        case .gray: Color(hex: 0x363D46)
-        case .light: Color(hex: 0xE1E5EA)
-        }
-    }
-
-    static var divider: Color {
-        switch mode {
-        case .dark: Color(hex: 0x1E242B)
-        case .gray: Color(hex: 0x2F353D)
-        case .light: Color(hex: 0xE8EBEF)
-        }
-    }
-
+    static var sunken: Color { Palette.sunken(mode) }
+    static var stroke: Color { Palette.stroke(mode) }
+    static var divider: Color { Palette.divider(mode) }
     /// Ring and meter tracks.
-    static var track: Color {
-        switch mode {
-        case .dark: Color(hex: 0x232930)
-        case .gray: Color(hex: 0x353C45)
-        case .light: Color(hex: 0xE4E8EC)
-        }
-    }
-
-    static var secondaryText: Color {
-        switch mode {
-        case .dark: Color(hex: 0x8D96A1)
-        case .gray: Color(hex: 0xA3ACB7)
-        case .light: Color(hex: 0x5A626D)
-        }
-    }
+    static var track: Color { Palette.track(mode) }
+    static var secondaryText: Color { Palette.secondaryText(mode) }
 
     /// The console stays dark in every mode, so its line colors always use the dark-mode shades.
     static let console = Color(hex: 0x07090B)
@@ -98,24 +48,10 @@ enum Theme {
     /// Text and icons placed on an accent fill.
     static var onAccent: Color { mode == .light ? .white : Color(hex: 0x0A0C0F) }
 
-    static var danger: Color { mode == .light ? Color(hex: 0xC62828) : consoleError }
-    static var warning: Color { AccentPreset.amber.color(for: mode) }
+    static var danger: Color { Palette.danger(mode) }
+    static var warning: Color { Palette.warning(mode) }
 
-    static func color(for status: ServerStatus) -> Color {
-        switch status {
-        case .online: accent
-        case .offline: secondaryText
-        case .starting, .updating: warning
-        case .crashed: danger
-        }
-    }
-}
-
-extension Font {
-    /// Monospaced data font (SF Mono) that still follows Dynamic Type.
-    static func mono(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        .system(style, design: .monospaced).weight(weight)
-    }
+    static func color(for status: ServerStatus) -> Color { Palette.color(for: status, mode: mode, accent: accent) }
 }
 
 // MARK: - Surfaces

@@ -56,6 +56,9 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(try text("%lld players will be disconnected.", "en", 1), "1 player will be disconnected.")
         XCTAssertEqual(try text("%lld players will be disconnected.", "de", 4), "4 Spieler werden getrennt.")
         XCTAssertEqual(try text("Delete %lld schedules?", "de", 1), "Zeitplan löschen?")
+        XCTAssertEqual(try text("%lld/%lld players", "en", 1, 1), "1/1 player")
+        XCTAssertEqual(try text("%lld/%lld players", "en", 4, 20), "4/20 players")
+        XCTAssertEqual(try text("%lld/%lld players", "de", 4, 20), "4/20 Spieler")
     }
 
     func testTranslationsCanReorderArguments() throws {

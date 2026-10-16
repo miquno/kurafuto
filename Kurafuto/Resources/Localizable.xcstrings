@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@" : {
+      "shouldTranslate" : false
+    },
     "%@ (you)" : {
       "localizations" : {
         "de" : {
@@ -19,6 +22,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@（你）"
+          }
+        }
+      }
+    },
+    "%@ CPU" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ CPU"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ の CPU"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ CPU"
           }
         }
       }
@@ -214,6 +239,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%2$@ 的 %1$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld/%lld online" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld/%3$lld online"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld/%3$lld online"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld/%3$lld 台オンライン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld/%3$lld 在线"
           }
         }
       }
@@ -738,6 +791,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld/%2$lld 在线"
+          }
+        }
+      }
+    },
+    "%lld/%lld players" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld Spieler"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$#@players@"
+          },
+          "substitutions" : {
+            "players" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg player"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg players"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld 人"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld 名玩家"
           }
         }
       }
@@ -1395,6 +1498,28 @@
         }
       }
     },
+    "As of %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stand %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 時点"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截至 %@"
+          }
+        }
+      }
+    },
     "Asks for %@ when Kurafuto opens and before stopping, killing, deleting or restoring." : {
       "localizations" : {
         "de" : {
@@ -1479,6 +1604,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "立即备份"
+          }
+        }
+      }
+    },
+    "Backed up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesichert"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップ済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已备份"
           }
         }
       }
@@ -1665,6 +1812,50 @@
     "CPU" : {
       "shouldTranslate" : false
     },
+    "CPU %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU %@"
+          }
+        }
+      }
+    },
+    "CPU and RAM of one server over the last hour." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU und RAM eines Servers in der letzten Stunde."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 台のサーバーの過去 1 時間の CPU とメモリ。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单台服务器最近一小时的 CPU 和内存。"
+          }
+        }
+      }
+    },
     "CPU and RAM over time" : {
       "localizations" : {
         "de" : {
@@ -1683,6 +1874,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CPU 和内存的变化"
+          }
+        }
+      }
+    },
+    "CPU · last hour" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU · letzte Stunde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU · 過去 1 時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU · 最近一小时"
           }
         }
       }
@@ -1753,6 +1966,28 @@
         }
       }
     },
+    "Choose Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server auswählen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバーを選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择服务器"
+          }
+        }
+      }
+    },
     "Choose a color." : {
       "localizations" : {
         "de" : {
@@ -1793,6 +2028,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请选择服务。"
+          }
+        }
+      }
+    },
+    "Choose the server this widget shows." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle den Server, den dieses Widget zeigt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このウィジェットに表示するサーバーを選択します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择此小组件显示的服务器。"
           }
         }
       }
@@ -3139,6 +3396,28 @@
         }
       }
     },
+    "Details" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "详情"
+          }
+        }
+      }
+    },
     "Detect crashes & restart" : {
       "localizations" : {
         "de" : {
@@ -4481,6 +4760,28 @@
         }
       }
     },
+    "Last hour" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzte Stunde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "過去 1 時間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近一小时"
+          }
+        }
+      }
+    },
     "Last login" : {
       "localizations" : {
         "de" : {
@@ -5339,6 +5640,28 @@
         }
       }
     },
+    "No backup listed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Backup gelistet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップがありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有备份记录"
+          }
+        }
+      }
+    },
     "No data yet" : {
       "localizations" : {
         "de" : {
@@ -5643,6 +5966,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "只有超级用户才能查看和更改角色适用的服务器。保存时会保持不变。"
+          }
+        }
+      }
+    },
+    "Open Kurafuto to show your servers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Kurafuto, um deine Server anzuzeigen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto を開くとサーバーが表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 Kurafuto 以显示你的服务器。"
           }
         }
       }
@@ -6093,6 +6438,28 @@
         }
       }
     },
+    "Players online" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler online"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンラインのプレイヤー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在线玩家"
+          }
+        }
+      }
+    },
     "Players: %lld of %lld" : {
       "localizations" : {
         "de" : {
@@ -6183,6 +6550,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "内存"
+          }
+        }
+      }
+    },
+    "RAM %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RAM %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メモリ %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内存 %@"
+          }
+        }
+      }
+    },
+    "RAM · of %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RAM · von %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メモリ · 上限 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内存 · 上限 %@"
           }
         }
       }
@@ -7067,6 +7478,28 @@
         }
       }
     },
+    "Server Load" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serverlast"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバー負荷"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器负载"
+          }
+        }
+      }
+    },
     "Server details" : {
       "localizations" : {
         "de" : {
@@ -7217,6 +7650,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "服务器"
+          }
+        }
+      }
+    },
+    "Servers online" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server online"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンラインのサーバー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在线服务器"
           }
         }
       }
@@ -7815,6 +8270,50 @@
         }
       }
     },
+    "Status and players of every server on your panel." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status und Spieler aller Server deines Panels."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パネル上のすべてのサーバーのステータスとプレイヤー。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "面板上所有服务器的状态和玩家。"
+          }
+        }
+      }
+    },
+    "Status and players of one server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status und Spieler eines Servers."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 台のサーバーのステータスとプレイヤー。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单台服务器的状态和玩家。"
+          }
+        }
+      }
+    },
     "Stop" : {
       "localizations" : {
         "de" : {
@@ -8185,6 +8684,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在你打开此文件后，它已在面板上被更改。"
+          }
+        }
+      }
+    },
+    "The latest backup of one server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das neueste Backup eines Servers."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 台のサーバーの最新のバックアップ。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单台服务器的最新备份。"
           }
         }
       }
@@ -9245,6 +9766,28 @@
         }
       }
     },
+    "Who is online on one server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer auf einem Server online ist."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 台のサーバーにオンラインのプレイヤー。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单台服务器上的在线玩家。"
+          }
+        }
+      }
+    },
     "World" : {
       "localizations" : {
         "de" : {
@@ -9483,6 +10026,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上限 %@"
+          }
+        }
+      }
+    },
+    "online" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "online"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンライン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在线"
           }
         }
       }
