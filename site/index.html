@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
   <title>Kurafuto – Server Panel for iPhone</title>
   <meta name="description" content="Control your self-hosted game servers from your iPhone. Private by design: no tracking, no accounts, no third parties.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -12,45 +13,109 @@
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <div class="wrap">
-    <header class="site">
-      <a class="brand" href="/"><img src="/icon.svg" alt=""> Kurafuto</a>
+  <header class="site">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/icon.svg" alt=""> Kurafuto <small lang="ja">クラフト</small></a>
       <nav class="site" aria-label="Main">
         <a href="/privacy/">Privacy</a>
         <a href="https://github.com/miquno/kurafuto">Source</a>
       </nav>
-    </header>
+    </div>
+  </header>
 
-    <main id="main">
+  <main id="main">
+    <div class="wrap">
       <section class="hero">
-        <h1>Your game servers.<br>In your pocket.</h1>
-        <p class="lead">Kurafuto is a native iPhone app for your self-hosted server panel: start and stop servers, watch the live console, manage players, schedules, backups and files – from anywhere.</p>
-        <span class="badge">Coming soon to the App Store</span>
+        <div>
+          <p class="kicker rise"><span lang="ja">クラフト</span> Server panel for iPhone</p>
+          <h1 class="rise d1">Your game servers.<br><span>In your pocket.</span></h1>
+          <p class="lead rise d2">Kurafuto is a native iPhone app for your self-hosted server panel: start and stop servers, watch the live console, manage players, schedules, backups and files – from anywhere.</p>
+          <p class="badge rise d3">Coming soon to the App Store</p>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <svg class="enso" viewBox="0 0 400 400">
+            <path class="ink" pathLength="1" d="M309 70 A172 172 0 0 1 200 372 A168 168 0 0 1 228 33"/>
+            <path class="ink heavy" pathLength="1" d="M309 70 A170 170 0 0 1 170 367"/>
+            <path class="trail" pathLength="1" d="M298 60 A178 178 0 0 1 194 381 A176 176 0 0 1 252 36"/>
+          </svg>
+          <p class="vertical" lang="ja">手のひらにサーバーを</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <p class="p-title">Servers</p>
+              <div class="p-card p-chart">
+                <div class="p-head"><span>CPU · last hour</span><b>23 %</b></div>
+                <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+                  <path class="area" d="M0 44 L14 40 L28 46 L42 34 L56 38 L70 26 L84 30 L98 22 L112 28 L126 18 L140 24 L154 14 L168 20 L182 12 L200 16 L200 60 L0 60 Z"/>
+                  <path class="line" pathLength="1" d="M0 44 L14 40 L28 46 L42 34 L56 38 L70 26 L84 30 L98 22 L112 28 L126 18 L140 24 L154 14 L168 20 L182 12 L200 16"/>
+                </svg>
+              </div>
+              <ul class="p-list">
+                <li><i class="st on"></i><span class="n">Survival</span><span class="m">6 / 20</span><span class="bar"><span class="w1"></span></span></li>
+                <li><i class="st on"></i><span class="n">Creative</span><span class="m">2 / 10</span><span class="bar"><span class="w2"></span></span></li>
+                <li><i class="st"></i><span class="n">Lobby</span><span class="m">Stopped</span><span class="bar"><span class="w3"></span></span></li>
+              </ul>
+            </div>
+          </div>
+          <span class="seal" lang="ja">匠</span>
+          <i class="petal"></i><i class="petal"></i><i class="petal"></i><i class="petal"></i><i class="petal"></i><i class="petal"></i>
+        </div>
       </section>
 
-      <div class="grid">
-        <div class="card"><h2>Live console</h2><p>Follow your server in real time and send commands with quick actions and history.</p></div>
-        <div class="card"><h2>Players &amp; backups</h2><p>Whitelist, kick or ban players. Create, restore and clean up backups.</p></div>
-        <div class="card"><h2>Schedules &amp; files</h2><p>Plan restarts and backups, edit configuration files, manage webhooks.</p></div>
-        <div class="card"><h2>Users &amp; roles</h2><p>Give friends exactly the access they need, server by server.</p></div>
-      </div>
-
-      <section class="privacy" aria-labelledby="privacy-heading">
-        <h2 id="privacy-heading">Private by design</h2>
-        <ul>
-          <li>No tracking, no analytics, no ads, no accounts.</li>
-          <li>The app talks only to the panel you add – never to us or anyone else.</li>
-          <li>Your token stays in the iOS Keychain on your device.</li>
-          <li>Open source, so you can check every line.</li>
+      <section class="section" aria-labelledby="features-heading">
+        <p class="kicker reveal"><span lang="ja">機能</span> Features</p>
+        <h2 class="section-title reveal" id="features-heading">Everything your panel does, native on iPhone.</h2>
+        <ul class="features">
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">一</span><h3>Live console</h3><p>Follow your server in real time and send commands with quick actions and history.</p></li>
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">二</span><h3>Players &amp; backups</h3><p>Whitelist, kick or ban players. Create, restore and clean up backups.</p></li>
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">三</span><h3>Schedules &amp; files</h3><p>Plan restarts and backups, edit configuration files, manage webhooks.</p></li>
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">四</span><h3>Users &amp; roles</h3><p>Give friends exactly the access they need, server by server.</p></li>
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">五</span><h3>Widgets &amp; Siri</h3><p>See status and players on your Home and Lock Screen. Start or stop servers with Siri and Shortcuts.</p></li>
+          <li class="reveal"><span class="num" lang="ja" aria-hidden="true">六</span><h3>Face ID lock</h3><p>Lock the app, and confirm stopping, deleting or restoring with Face ID.</p></li>
         </ul>
-        <p><a href="/privacy/">Read the privacy policy</a></p>
       </section>
-    </main>
 
-    <footer class="site">
-      <p>Compatible with Crafty Controller 4. Kurafuto is an unofficial app and is not affiliated with or endorsed by Arcadia Technology, Mojang or Microsoft.</p>
-      <p><a href="/privacy/">Privacy</a> · <a href="https://github.com/miquno/kurafuto">Source code</a> · <a href="mailto:support@getkurafuto.app">support@getkurafuto.app</a></p>
-    </footer>
-  </div>
+      <section class="section privacy" aria-labelledby="privacy-heading">
+        <div>
+          <p class="kicker reveal"><span lang="ja">安心</span> Privacy</p>
+          <h2 class="reveal" id="privacy-heading">Private by design</h2>
+          <p class="mark" lang="ja" aria-hidden="true">守</p>
+        </div>
+        <div class="reveal">
+          <ul>
+            <li>No tracking, no analytics, no ads, no accounts.</li>
+            <li>The app talks only to the panel you add – never to us or anyone else.</li>
+            <li>Your token stays in the iOS Keychain on your device.</li>
+            <li>Open source, so you can check every line.</li>
+          </ul>
+          <p><a class="more" href="/privacy/">Read the privacy policy</a></p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <svg class="wave" aria-hidden="true">
+    <defs>
+      <g id="fan"><circle r="24"/><circle r="19"/><circle r="14"/><circle r="9"/><circle r="4"/></g>
+      <pattern id="seigaiha" width="48" height="24" patternUnits="userSpaceOnUse">
+        <use href="#fan" x="0" y="0"/><use href="#fan" x="48" y="0"/>
+        <use href="#fan" x="24" y="12"/>
+        <use href="#fan" x="0" y="24"/><use href="#fan" x="48" y="24"/>
+        <use href="#fan" x="24" y="36"/>
+      </pattern>
+    </defs>
+    <rect width="4800" height="96" fill="url(#seigaiha)"/>
+  </svg>
+
+  <footer class="site">
+    <div class="wrap">
+      <div>
+        <p class="sig"><span lang="ja" aria-hidden="true">匠</span> Kurafuto</p>
+        <p>Compatible with Crafty Controller 4. Kurafuto is an unofficial app and is not affiliated with or endorsed by Arcadia Technology, Mojang or Microsoft.</p>
+      </div>
+      <p class="links"><a href="/privacy/">Privacy</a> · <a href="https://github.com/miquno/kurafuto">Source code</a> · <a href="mailto:support@getkurafuto.app">support@getkurafuto.app</a></p>
+    </div>
+  </footer>
 </body>
 </html>
