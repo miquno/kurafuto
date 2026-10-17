@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-10-15_
+_Last updated: 2026-10-16_
 
 **Short version: Kurafuto collects nothing. We do not have a server, and we never see your data.**
 
@@ -31,6 +31,10 @@ Your password is never stored; it is only used once to obtain a token from your 
 
 You can remove everything by signing out of a panel in Settings or by deleting the app. Signing out or switching panels also clears the widget summary.
 
+## Live Activities
+
+If you start a server or a backup in Kurafuto, a Live Activity on the Lock Screen and in the Dynamic Island shows its progress: the server's name, how long it has been starting or how far the backup is, and whether it worked. Kurafuto updates it from your iPhone; it uses no push service, so nothing is sent to Apple or anyone else for it. iOS keeps the activity until it ends and may also show it in StandBy and on a paired Apple Watch. If the Face ID lock is on, the activity leaves out the server's name. You can turn Live Activities off in the iPhone's Settings under Kurafuto.
+
 ## Siri and Shortcuts
 
 If you use Kurafuto with Siri or Shortcuts, the actions run inside the app on your iPhone and talk only to your panel. To recognize your servers by name, iOS learns their names from Kurafuto; Siri requests are handled by Apple under its own privacy terms. Your panel token never leaves the app.
@@ -55,4 +59,4 @@ Changes to this policy are published at https://getkurafuto.app/privacy/ and in 
 
 ## Contact
 
-Questions about privacy: support@getkurafuto.app or an issue at https://github.com/miqunosoft/kurafuto/issues. For security issues, see [SECURITY.md](SECURITY.md).
+Questions about privacy: support@getkurafuto.app or an issue at https://github.com/miquno/kurafuto/issues. For security issues, see [SECURITY.md](SECURITY.md).
