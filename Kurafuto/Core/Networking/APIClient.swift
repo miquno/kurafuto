@@ -104,7 +104,7 @@ final class APIClient: NSObject, @unchecked Sendable {
 
     private func perform(_ method: Method, _ path: String, query: [URLQueryItem], body: Body,
                          headers: [String: String] = [:]) async throws -> (Data, Int) {
-        guard var comps = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
+        guard var comps = URLComponents(url: try secureBase().appending(path: path), resolvingAgainstBaseURL: false) else {
             throw CraftyError.invalidURL
         }
         if !query.isEmpty { comps.queryItems = query }
@@ -136,16 +136,18 @@ final class APIClient: NSObject, @unchecked Sendable {
             throw CraftyError.transport(error)
         }
 
-        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if (300..<400).contains(status) { throw CraftyError.redirected }
+        return (data, status)
     }
 
     /// WebSocket on the same pinned, ephemeral session. Crafty reads the token only from the `token`
     /// cookie here, so it travels in a header and never in the URL.
     func webSocket(_ path: String, query: [URLQueryItem]) throws -> URLSessionWebSocketTask {
-        guard var comps = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false) else {
+        guard var comps = URLComponents(url: try secureBase().appending(path: path), resolvingAgainstBaseURL: false) else {
             throw CraftyError.invalidURL
         }
-        comps.scheme = comps.scheme == "http" ? "ws" : "wss"
+        comps.scheme = "wss"
         comps.percentEncodedQueryItems = query.map {
             URLQueryItem(name: $0.name, value: $0.value?.addingPercentEncoding(withAllowedCharacters: .alphanumerics))
         }
@@ -158,17 +160,24 @@ final class APIClient: NSObject, @unchecked Sendable {
 
     /// For `/metrics/*` (OpenMetrics text, no JSON envelope).
     func rawText(_ path: String) async throws -> String {
-        var req = URLRequest(url: baseURL.appending(path: path), timeoutInterval: 20)
+        var req = URLRequest(url: try secureBase().appending(path: path), timeoutInterval: 20)
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         let data: Data, response: URLResponse
         do { (data, response) = try await session.data(for: req) }
         catch { throw CraftyError.transport(error) }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if (300..<400).contains(status) { throw CraftyError.redirected }
         guard (200..<300).contains(status) else {
             let envelope = try? JSONDecoder().decode(Envelope<Empty>.self, from: data)
             throw fail(Self.failure(status: status, error: envelope?.error, detail: envelope?.errorData, path: path))
         }
         return String(decoding: data, as: UTF8.self)
+    }
+
+    /// Nothing, least of all the token, is sent to a panel address without TLS.
+    private func secureBase() throws -> URL {
+        guard baseURL.scheme?.lowercased() == "https" else { throw CraftyError.invalidURL }
+        return baseURL
     }
 
     /// Maps a failed response. Crafty answers an invalid or expired token with 403 `ACCESS_DENIED`,
@@ -192,6 +201,24 @@ final class APIClient: NSObject, @unchecked Sendable {
 extension Notification.Name {
     /// Posted with the `APIClient` as object when the panel rejects its token.
     static let panelSessionExpired = Notification.Name("PanelSessionExpired")
+}
+
+// MARK: - Redirects stay on the panel
+extension APIClient: URLSessionTaskDelegate {
+    /// A redirect is followed only to the panel's own scheme, host and port, so neither a proxy nor a hostile
+    /// panel can send the request and its token to another host. Refused redirects end as `CraftyError.redirected`.
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest) async -> URLRequest? {
+        guard let target = request.url, Self.sameOrigin(target, baseURL) else { return nil }
+        return request
+    }
+
+    static func sameOrigin(_ a: URL, _ b: URL) -> Bool {
+        func port(_ url: URL) -> Int? { url.port ?? ["https": 443, "wss": 443, "http": 80, "ws": 80][url.scheme?.lowercased() ?? ""] }
+        return a.scheme?.lowercased() == b.scheme?.lowercased()
+            && a.host()?.lowercased() == b.host()?.lowercased()
+            && port(a) == port(b)
+    }
 }
 
 // MARK: - Self-signed certificates (Crafty default) – trust on first use with pinning

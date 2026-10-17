@@ -1674,6 +1674,28 @@
         }
       }
     },
+    "Backing up…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird gesichert …"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップ中…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在备份…"
+          }
+        }
+      }
+    },
     "Backup" : {
       "localizations" : {
         "de" : {
@@ -1714,6 +1736,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "备份已开始"
+          }
+        }
+      }
+    },
+    "Backup failed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup fehlgeschlagen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップに失敗しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份失败"
+          }
+        }
+      }
+    },
+    "Backup finished" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup abgeschlossen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップが完了しました"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份已完成"
           }
         }
       }
@@ -3484,6 +3550,28 @@
         }
       }
     },
+    "Did not start" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht gestartet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動しませんでした"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未能启动"
+          }
+        }
+      }
+    },
     "Dismiss %@" : {
       "localizations" : {
         "de" : {
@@ -4734,6 +4822,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "强制终止会立即停止服务器，且不会保存。"
+          }
+        }
+      }
+    },
+    "Kurafuto connects only over HTTPS, so your password and token stay encrypted. Crafty serves HTTPS on port 8443 by default." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto verbindet sich nur über HTTPS, damit dein Passwort und dein Token verschlüsselt bleiben. Crafty nutzt standardmäßig HTTPS auf Port 8443."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスワードとトークンを暗号化したまま送るため、Kurafuto は HTTPS でのみ接続します。Crafty は標準でポート 8443 の HTTPS を使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafuto 只通过 HTTPS 连接，以确保你的密码和令牌始终加密。Crafty 默认在 8443 端口提供 HTTPS。"
           }
         }
       }
@@ -6102,6 +6212,28 @@
         }
       }
     },
+    "Open Kurafuto to update" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Aktualisieren Kurafuto öffnen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kurafutoを開くと更新されます"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 Kurafuto 以更新"
+          }
+        }
+      }
+    },
     "Open Web Panel" : {
       "localizations" : {
         "de" : {
@@ -6798,6 +6930,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "阅读 EULA"
+          }
+        }
+      }
+    },
+    "Ready for players" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereit für Spieler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレイヤーが参加できます"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "玩家可以加入了"
           }
         }
       }
@@ -9174,6 +9328,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "如果服务器在停止超时内仍未停止，面板会将其强制终止。"
+          }
+        }
+      }
+    },
+    "The panel redirected to another address. Kurafuto only connects to the address you added." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Panel hat auf eine andere Adresse umgeleitet. Kurafuto verbindet sich nur mit der Adresse, die du hinzugefügt hast."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パネルが別のアドレスにリダイレクトしました。Kurafuto は追加したアドレスにのみ接続します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "面板重定向到了另一个地址。Kurafuto 只连接你添加的地址。"
           }
         }
       }
