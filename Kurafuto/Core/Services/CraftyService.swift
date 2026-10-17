@@ -46,6 +46,9 @@ protocol CraftyService: AnyObject, Sendable {
     /// Nil when the panel cannot list the archives: Crafty 4.7 has no list endpoint, and snapshot configs are never listed.
     func backupFiles(serverID: String, config: BackupConfig) async throws -> [BackupFile]?
     func startBackup(serverID: String, configID: String) async throws
+    /// Follows the server's running or next backup until it ends. Live: `backup_status` events on the panel WebSocket
+    /// (undocumented). Ends without a result when the socket fails, or after `idleTimeout` without an event.
+    func backupProgress(serverID: String, idleTimeout: Duration?) -> AsyncStream<BackupProgress>
     /// `inPlace` unpacks over the current files; otherwise the panel empties the server folder first.
     func restoreBackup(_ file: BackupFile, configID: String, inPlace: Bool, serverID: String) async throws
     func deleteBackup(_ file: BackupFile, configID: String, serverID: String) async throws
@@ -104,6 +107,7 @@ enum CraftyError: LocalizedError {
     case fileChanged
     case invalidName
     case uploadRefused(String)
+    case redirected
 
     var errorDescription: String? {
         switch self {
@@ -119,6 +123,7 @@ enum CraftyError: LocalizedError {
         case .eulaRequired: String(localized: "The Minecraft EULA must be accepted before this server can start.")
         case .fileChanged: String(localized: "The file was changed on the panel after you opened it.")
         case .uploadRefused(let reason): reason
+        case .redirected: String(localized: "The panel redirected to another address. Kurafuto only connects to the address you added.")
         case .invalidName: String(localized: "Names cannot be empty, \".\" or \"..\" and cannot contain / or \\.")
         }
     }
