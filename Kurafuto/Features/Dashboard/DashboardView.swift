@@ -5,6 +5,7 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AppState.self) private var app
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model = DashboardModel()
     @SceneStorage("dashboard.selectedServer") private var storedSelection = ""
     @State private var path = NavigationPath()
@@ -96,9 +97,9 @@ struct DashboardView: View {
     private func summary(_ servers: [Server]) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "person.2.fill")
-            HStack(spacing: 4) {
+            AdaptiveStack(spacing: 4) {
                 Text("\(model.onlineCount)/\(servers.count) online")
-                Text(verbatim: "·")
+                if !typeSize.isAccessibilitySize { Text(verbatim: "·") }
                 Text("\(model.playerCount) players")
             }
             .contentTransition(.numericText())
