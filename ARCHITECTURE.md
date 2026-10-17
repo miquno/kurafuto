@@ -32,13 +32,14 @@ Kurafuto is a single-target SwiftUI app with no backend of its own and no third-
 | Panel list (name, URL, username, pinned cert hash) | `Application Support/instances.json`, complete file protection | Never (part of the user's own device backup) |
 | App preferences (Face ID toggle, refresh interval) | `UserDefaults` | Never |
 | Widget snapshot (panel name; server names, status, versions, player counts and names, CPU/RAM of the last hour, newest backup time; time, theme, app-lock flag) | App Group container `widget-snapshot.json`, `completeUntilFirstUserAuthentication` | Never (ADR 0009) |
+| Live Activity (server id and name – no name with the app lock on –, start time, theme, start-up or backup phase and progress) | iOS (ActivityKit), until the activity ends | Never; no push token (ADR 0011) |
 | Server data, logs, files | Memory while displayed | Never stored by Kurafuto |
 
 Kurafuto has no server, no analytics and no third-party network calls. See `PRIVACY.md` and ADR 0002.
 
 ## Live updates
 
-`LiveCraftyService.consoleStream` loads the console backlog from `/logs`, then follows the panel's undocumented WebSocket `/ws` – the same one the web panel uses, on the same host and pinned session, authenticated with the `token` cookie. Parsing lives in `CraftyConsoleFeed`. If the socket is refused, drops or stops answering pings, the stream falls back to polling `/logs` every 2 seconds. Starting a server also opens the socket briefly, because the panel reports a missing Minecraft EULA only there. Stats are still polled from `/stats`. Everything stops when the view disappears (`.task` cancellation).
+`LiveCraftyService.consoleStream` loads the console backlog from `/logs`, then follows the panel's undocumented WebSocket `/ws` – the same one the web panel uses, on the same host and pinned session, authenticated with the `token` cookie. Parsing lives in `CraftyConsoleFeed`. If the socket is refused, drops or stops answering pings, the stream falls back to polling `/logs` every 2 seconds. Starting a server also opens the socket briefly, because the panel reports a missing Minecraft EULA only there, and a backup's Live Activity listens on it for the panel's progress events. Stats are still polled from `/stats`. Everything stops when the view disappears (`.task` cancellation).
 
 ## Errors
 
@@ -46,11 +47,15 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 
 ## App lock
 
-`AppState.lock` (`AppLock`) wraps LocalAuthentication's `deviceOwnerAuthentication`, so Face ID or Touch ID falls back to the device passcode. When the lock is on, `RootView` covers the app with `LockView` at launch and after the scene went to the background (not on `.inactive`, which the Face ID prompt itself triggers). Destructive actions go through `.destructiveConfirmation` or `lock.authorize(_:)`. iOS answers only yes or no; no biometric data reaches the app.
+`AppState.lock` (`AppLock`) wraps LocalAuthentication's `deviceOwnerAuthentication`, so Face ID or Touch ID falls back to the device passcode. When the lock is on, `RootView` covers the app with `LockView` at launch and after the scene went to the background (not on `.inactive`, which the Face ID prompt itself triggers). The lock screen and the app-switcher cover live in a window of their own above the app's (`ShieldWindow`), because iOS presents sheets, alerts and dialogs above the app's root view. Destructive actions go through `.destructiveConfirmation` or `lock.authorize(_:)`. iOS answers only yes or no; no biometric data reaches the app.
 
 ## Widgets
 
 `KurafutoWidgets` is a WidgetKit extension with five widgets, laid out after the maintainer's mocks: Server (small, medium, large, Lock Screen rectangular and inline), Server Load (small, Lock Screen rectangular), Players (medium), Backup (small) and Panel (medium, large, Lock Screen circular and inline). Widgets for one server are configured with `SelectServerIntent`. The extension never talks to a panel and has no token. After each successful refresh, the Servers tab hands its servers, stats, history and newest backups to `WidgetSync`, which writes a `WidgetSnapshot` into the shared App Group container (right away for status, player and backup changes, every five minutes for live load) and reloads the timelines. While widgets are placed, the Servers tab loads the last hour of every server once per load, and the newest backup only for a placed backup widget. Signing out and switching panels clear the snapshot. A widget opens `kurafuto://server/<id>[/console|/details]`; `RootView` passes it on, and the Servers tab opens that server only if the panel lists it (ADR 0009). The extension shares `WidgetSnapshot.swift`, `ServerStats.swift`, `Palette.swift` and the String Catalog with the app.
+
+## Live Activities
+
+When the panel accepted a start or a backup from the app, `AppState.followInLiveActivity` hands it to `ServerActivities` (`App/`), which requests a Live Activity with `ServerActivityAttributes` (`Core/Models/ServerActivity.swift`, shared with the extension) and follows it on the main actor. Start-ups poll `/stats` every 2 seconds and read `StartUpWatch`: ready once the server runs and answers the panel's ping (`ServerStats.answersPing`). Backups read `CraftyService.backupProgress`, which in the live service follows the panel WebSocket's `backup_status` events and then the config's `status`; the activity appears with the first event. There is no push token: only the running app updates the activities, so a heartbeat moves their stale date forward every 20 seconds, a background task keeps them updating for about half a minute after leaving the app, and afterwards they show as stale until the app is opened again. Signing out, switching panels and the next launch end them. `ServerActivityWidget` in the extension draws the Lock Screen banner and the Dynamic Island and opens `kurafuto://server/<id>/console` or `/details` (ADR 0011).
 
 ## Siri and Shortcuts
 
@@ -59,6 +64,10 @@ Kurafuto has no server, no analytics and no third-party network calls. See `PRIV
 ## Localization
 
 All UI text is English in code and translated in `Kurafuto/Resources/Localizable.xcstrings` (String Catalog: German, Japanese, Simplified Chinese, with plural variations); the permission prompts are in `InfoPlist.xcstrings` and the Siri phrases in `AppShortcuts.xcstrings`. The compiler records every localizable string (`SWIFT_EMIT_LOC_STRINGS`), and CI's `scripts/check-localizations.sh` fails when the catalog and the code drift apart or a translation is missing. Panel data is never translated or looked up as a key.
+
+## Accessibility
+
+Every control has a VoiceOver label, values are read as one element (gauges, metrics, player counts), and section titles are headers. Text uses Dynamic Type text styles; rows of side-by-side content use `AdaptiveStack`, which becomes a column at the accessibility sizes, and fixed sizes that hold text grow with `@ScaledMetric`. The palette's text colors reach WCAG AA (4.5:1) on every surface and on tints of up to 16 % in all three modes, which `AccessibilityTests` checks for every accent preset. Motion follows Reduce Motion, and status is never shown by color alone.
 
 ## Decisions
 
