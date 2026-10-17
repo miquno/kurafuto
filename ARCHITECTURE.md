@@ -65,6 +65,10 @@ When the panel accepted a start or a backup from the app, `AppState.followInLive
 
 All UI text is English in code and translated in `Kurafuto/Resources/Localizable.xcstrings` (String Catalog: German, Japanese, Simplified Chinese, with plural variations); the permission prompts are in `InfoPlist.xcstrings` and the Siri phrases in `AppShortcuts.xcstrings`. The compiler records every localizable string (`SWIFT_EMIT_LOC_STRINGS`), and CI's `scripts/check-localizations.sh` fails when the catalog and the code drift apart or a translation is missing. Panel data is never translated or looked up as a key.
 
+## Accessibility
+
+Every control has a VoiceOver label, values are read as one element (gauges, metrics, player counts), and section titles are headers. Text uses Dynamic Type text styles; rows of side-by-side content use `AdaptiveStack`, which becomes a column at the accessibility sizes, and fixed sizes that hold text grow with `@ScaledMetric`. The palette's text colors reach WCAG AA (4.5:1) on every surface and on tints of up to 16 % in all three modes, which `AccessibilityTests` checks for every accent preset. Motion follows Reduce Motion, and status is never shown by color alone.
+
 ## Decisions
 
 See `docs/decisions/`.
